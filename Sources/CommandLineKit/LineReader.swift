@@ -81,16 +81,20 @@ public class LineReader {
     if isatty(inputFile) != 1 {
       return nil
     } else {
-      self.termSupported = LineReader.readerSupport(termVar: self.currentTerm)
+      self.termSupported = LineReader.supportedBy(terminal: self.currentTerm)
     }
-    self.fullColorSupport = Terminal.fullColorSupport(termVar: self.currentTerm)
+    self.fullColorSupport = Terminal.fullColorSupport(terminal: self.currentTerm)
     self.history = LineReaderHistory()
     self.completionCallback = completionCallback
     self.hintsCallback = hintsCallback
   }
   
-  private static func readerSupport(termVar: String) -> Bool {
-    switch termVar {
+  public static var supportedByTerminal: Bool {
+    return LineReader.supportedBy(terminal: Terminal.current)
+  }
+  
+  public static func supportedBy(terminal: String) -> Bool {
+    switch terminal {
       case "", "xcode", "dumb", "cons25", "emacs":
         return false
       default:

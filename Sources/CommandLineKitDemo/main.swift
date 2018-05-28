@@ -34,6 +34,10 @@
 import Foundation
 import CommandLineKit
 
+print("Detected terminal: \(Terminal.current)")
+print(Terminal.fullColorSupport ? "Full color support" : "No color support")
+print(LineReader.supportedByTerminal ? "LineReader support" : "No LineReader support")
+
 if let ln = LineReader() {
   ln.setCompletionCallback { currentBuffer in
     let completions = [

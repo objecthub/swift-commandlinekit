@@ -41,12 +41,12 @@ public struct Terminal {
   public static let current: String = ProcessInfo.processInfo.environment["TERM"] ?? ""
   
   public static var fullColorSupport: Bool {
-    return Terminal.fullColorSupport(termVar: Terminal.current)
+    return Terminal.fullColorSupport(terminal: Terminal.current)
   }
   
-  public static func fullColorSupport(termVar: String) -> Bool {
+  public static func fullColorSupport(terminal: String) -> Bool {
     // A rather dumb way of detecting colour support
-    return termVar.contains("256")
+    return terminal.contains("256")
   }
   
   // Colour tables from https://jonasjacek.github.io/colors/
