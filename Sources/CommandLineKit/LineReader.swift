@@ -150,6 +150,7 @@ public class LineReader {
   /// throw an error if the terminal cannot be written to.
   public func readLine(prompt: String,
                        maxCount: Int? = nil,
+                       strippingNewline: Bool = true,
                        promptProperties: TextProperties = TextProperties.none,
                        readProperties: TextProperties = TextProperties.none,
                        parenProperties: TextProperties = TextProperties.none) throws -> String {
@@ -157,17 +158,22 @@ public class LineReader {
     if self.termSupported {
       return try self.readLineSupported(prompt: prompt,
                                         maxCount: maxCount,
+                                        strippingNewline: strippingNewline,
                                         promptProperties: promptProperties,
                                         readProperties: readProperties,
                                         parenProperties: parenProperties)
     } else {
-      return try self.readLineUnsupported(prompt: prompt, maxCount: maxCount)
+      return try self.readLineUnsupported(prompt: prompt,
+                                          maxCount: maxCount,
+                                          strippingNewline: strippingNewline)
     }
   }
   
-  private func readLineUnsupported(prompt: String, maxCount: Int?) throws -> String {
+  private func readLineUnsupported(prompt: String,
+                                   maxCount: Int?,
+                                   strippingNewline: Bool) throws -> String {
     print(prompt, terminator: "")
-    if let line = Swift.readLine() {
+    if let line = Swift.readLine(strippingNewline: strippingNewline) {
       return maxCount != nil ? String(line.prefix(maxCount!)) : line
     } else {
       throw LineReaderError.EOF
@@ -176,6 +182,7 @@ public class LineReader {
   
   private func readLineSupported(prompt: String,
                                  maxCount: Int?,
+                                 strippingNewline: Bool,
                                  promptProperties: TextProperties,
                                  readProperties: TextProperties,
                                  parenProperties: TextProperties) throws -> String {
@@ -196,12 +203,17 @@ public class LineReader {
           char = completionChar
         }
         if let rv = try self.handleCharacter(char, editState: editState) {
+          if editState.moveEnd() {
+            try self.updateCursorPos(editState: editState)
+          }
+          // It's unclear to me why it's necessary to set the cursor to column 0
+          try self.output(text: "\n" + AnsiCodes.setCursorColumn(0))
           line = rv
           return
         }
       }
     }
-    return line
+    return strippingNewline ? line : line + "\n"
   }
   
   private func completeLine(editState: EditState) throws -> UInt8? {

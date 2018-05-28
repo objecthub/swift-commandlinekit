@@ -61,21 +61,17 @@ if let ln = LineReader() {
       return nil
     }
   }
-  do {
-    try ln.clearScreen()
-  } catch {
-    print(error)
-  }
   print("Type 'exit' to quit")
   var done = false
   while !done {
     do {
       let output = try ln.readLine(prompt: "> ",
                                    maxCount: 200,
+                                   strippingNewline: true,
                                    promptProperties: TextProperties(.green, nil, .bold),
                                    readProperties: TextProperties(.blue, nil),
                                    parenProperties: TextProperties(.red, nil, .bold))
-      print("\nOutput: \(output)")
+      print("Entered: \(output)")
       ln.addHistory(output)
       if output == "exit" {
         break
