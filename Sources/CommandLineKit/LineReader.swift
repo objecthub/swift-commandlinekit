@@ -10,18 +10,18 @@
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
-//  
+//
 //  * Redistributions of source code must retain the above copyright notice,
 //    this list of conditions and the following disclaimer.
-//  
+//
 //  * Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
 //    and/or other materials provided with the distribution.
-//  
+//
 //  * Neither the name of the copyright holder nor the names of its contributors
 //    may be used to endorse or promote products derived from this software without
 //    specific prior written permission.
-//  
+//
 //  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 //  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 //  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,44 +32,44 @@
 //  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+//
 
 import Foundation
 
 public class LineReader {
-  
+
   /// Does this terminal support this line reader?
   public let termSupported: Bool
-  
+
   /// Terminal type
   public let currentTerm: String
-  
+
   /// Does the terminal support colors?
   public let fullColorSupport: Bool
-  
+
   /// If false (the default) any edits by the user to a line in the history will be discarded
   /// if the user moves forward or back in the history without pressing Enter. If true, all
   /// history edits will be preserved.
   public var preserveHistoryEdits = false
-  
+
   /// The history of previous line reads
   private var history: LineReaderHistory
-  
+
   /// Temporary line read buffer to handle browsing of histories
   private var tempBuf: String?
-  
+
   /// A callback for handling line completions
   private var completionCallback: ((String) -> [String])?
-  
+
   /// A callback for handling hints
   private var hintsCallback: ((String) -> (String, TextProperties)?)?
-  
+
   /// A POSIX file handle for the input
   private let inputFile: Int32
-  
+
   /// A POSIX file handle for the output
   private let outputFile: Int32
-  
+
   /// Initializer
   public init?(inputFile: Int32 = STDIN_FILENO,
                outputFile: Int32 = STDOUT_FILENO,
@@ -88,11 +88,11 @@ public class LineReader {
     self.completionCallback = completionCallback
     self.hintsCallback = hintsCallback
   }
-  
+
   public static var supportedByTerminal: Bool {
     return LineReader.supportedBy(terminal: Terminal.current)
   }
-  
+
   public static func supportedBy(terminal: String) -> Bool {
     switch terminal {
       case "", "xcode", "dumb", "cons25", "emacs":
@@ -101,42 +101,42 @@ public class LineReader {
         return true
     }
   }
-  
+
   /// Adds a string to the history buffer.
   public func addHistory(_ item: String) {
     self.history.add(item)
   }
-  
+
   /// Adds a callback for tab completion. The callback is taking the current text and returning
   /// an array of Strings containing possible completions.
   public func setCompletionCallback(_ callback: @escaping (String) -> [String]) {
     self.completionCallback = callback
   }
-  
+
   /// Adds a callback for hints as you type. The callback is taking the current text and
   /// optionally returning the hint and a tuple of RGB colours for the hint text.
   public func setHintsCallback(_ callback: @escaping (String) -> (String, TextProperties)?) {
     self.hintsCallback = callback
   }
-  
+
   /// Loads history from a file and appends it to the current history buffer. This method can
   /// throw an error if the file cannot be found or loaded.
   public func loadHistory(fromFile path: String) throws {
     try self.history.load(fromFile: path)
   }
-  
+
   /// Saves history to a file. This method can throw an error if the file cannot be written to.
   public func saveHistory(toFile path: String) throws {
     try self.history.save(toFile: path)
   }
-  
+
   /// Sets the maximum amount of items to keep in history. If this limit is reached, the oldest
   /// item is discarded when a new item is added. Setting the maximum length of history to 0
   /// (the default) will keep unlimited items in history.
   public func setHistoryMaxLength(_ historyMaxLength: UInt) {
     self.history.maxLength = historyMaxLength
   }
-  
+
   /// Clears the screen. This method can throw an error if the terminal cannot be written to.
   public func clearScreen() throws {
     if self.termSupported {
@@ -144,7 +144,7 @@ public class LineReader {
       try self.output(text: AnsiCodes.clearScreen)
     }
   }
-  
+
   /// The main function of LineReader. This method shows a prompt to the user at the beginning
   /// of the line and reads the input from the user, returning it as a string. The method can
   /// throw an error if the terminal cannot be written to.
@@ -164,7 +164,7 @@ public class LineReader {
       return try self.readLineUnsupported(prompt: prompt, maxCount: maxCount)
     }
   }
-  
+
   private func readLineUnsupported(prompt: String, maxCount: Int?) throws -> String {
     print(prompt, terminator: "")
     if let line = Swift.readLine() {
@@ -173,7 +173,7 @@ public class LineReader {
       throw LineReaderError.EOF
     }
   }
-  
+
   private func readLineSupported(prompt: String,
                                  maxCount: Int?,
                                  promptProperties: TextProperties,
@@ -203,7 +203,7 @@ public class LineReader {
     }
     return line
   }
-  
+
   private func completeLine(editState: EditState) throws -> UInt8? {
     guard let completionCallback = self.completionCallback else {
       return nil
@@ -248,7 +248,7 @@ public class LineReader {
       }
     }
   }
-  
+
   private func handleCharacter(_ ch: UInt8, editState: EditState) throws -> String? {
     switch ch {
       case ControlCharacters.Enter.rawValue:
@@ -345,7 +345,7 @@ public class LineReader {
     }
     return nil
   }
-  
+
   private func handleEscapeCode(editState: EditState) throws {
     let fst = self.readCharacter()
     switch fst {
@@ -438,7 +438,7 @@ public class LineReader {
         break
     }
   }
-  
+
   private var cursorColumn: Int? {
     do {
       try self.output(text: AnsiCodes.cursorLocation)
@@ -471,7 +471,7 @@ public class LineReader {
     }
     return Int(String(rowCol[1]))
   }
-  
+
   private var numColumns: Int {
     var winSize = winsize()
     if ioctl(1, UInt(TIOCGWINSZ), &winSize) == -1 || winSize.ws_col == 0 {
@@ -480,11 +480,11 @@ public class LineReader {
       return Int(winSize.ws_col)
     }
   }
-  
+
   /// This constant is unfortunately not defined right now for usage in Swift; it is specific
   /// to macOS. Thus, this code is not portable!
   private static let FIONREAD: UInt = 0x4004667f
-  
+
   private var bytesAvailable: Int {
     var available: Int = 0
     guard ioctl(self.inputFile, LineReader.FIONREAD, &available) >= 0 else {
@@ -492,7 +492,7 @@ public class LineReader {
     }
     return available
   }
-  
+
   private func updateCursorPos(editState: EditState) throws {
     if editState.requiresMatching() {
       try self.refreshLine(editState: editState)
@@ -507,7 +507,7 @@ public class LineReader {
       try self.output(text: commandBuf)
     }
   }
-  
+
   private func refreshLine(editState: EditState, decorate: Bool = true) throws {
     let cursorWidth = editState.cursorWidth
     let numColumns = self.numColumns
@@ -542,7 +542,7 @@ public class LineReader {
                   AnsiCodes.cursorForward(cursorCols)
     try self.output(text: commandBuf)
   }
-  
+
   private func readByte() -> UInt8? {
     var input: UInt8 = 0
     if read(self.inputFile, &input, 1) == 0 {
@@ -550,19 +550,19 @@ public class LineReader {
     }
     return input
   }
-  
+
   private func forceReadByte() -> UInt8 {
     var input: UInt8 = 0
     _ = read(self.inputFile, &input, 1)
     return input
   }
-  
+
   private func readCharacter() -> Character? {
     var input: UInt8 = 0
     _ = read(self.inputFile, &input, 1)
     return Character(UnicodeScalar(input))
   }
-  
+
   private func ringBell() {
     do {
       try self.output(character: ControlCharacters.Bell.character)
@@ -570,21 +570,21 @@ public class LineReader {
       // ignore failure
     }
   }
-  
+
   private func output(character: ControlCharacters) throws {
     try self.output(character: character.character)
   }
-  
+
   private func output(character: Character) throws {
     try self.output(text: String(character))
   }
-  
+
   private func output(text: String) throws {
     if write(outputFile, text, text.utf8.count) == -1 {
       throw LineReaderError.generalError("Unable to write to output")
     }
   }
-  
+
   private func setBuffer(editState: EditState, new buffer: String) throws {
     if editState.setBuffer(buffer) {
       _ = editState.moveEnd()
@@ -593,7 +593,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveLeft(editState: EditState) throws {
     if editState.moveLeft() {
       try self.updateCursorPos(editState: editState)
@@ -601,7 +601,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveRight(editState: EditState) throws {
     if editState.moveRight() {
       try self.updateCursorPos(editState: editState)
@@ -609,7 +609,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveHome(editState: EditState) throws {
     if editState.moveHome() {
       try self.updateCursorPos(editState: editState)
@@ -617,7 +617,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveEnd(editState: EditState) throws {
     if editState.moveEnd() {
       try self.updateCursorPos(editState: editState)
@@ -625,7 +625,7 @@ public class LineReader {
       self.ringBell()
     }
   }
- 
+
   private func moveToWordStart(editState: EditState) throws {
     if editState.moveToWordStart() {
       try self.updateCursorPos(editState: editState)
@@ -633,7 +633,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveToWordEnd(editState: EditState) throws {
     if editState.moveToWordEnd() {
       try self.updateCursorPos(editState: editState)
@@ -641,7 +641,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func deleteCharacter(editState: EditState) throws {
     if editState.deleteCharacter() {
       try self.refreshLine(editState: editState)
@@ -649,7 +649,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func moveHistory(editState: EditState,
                            direction: LineReaderHistory.HistoryDirection) throws {
     // If we're at the end of history (editing the current line), push it into a temporary
@@ -667,7 +667,7 @@ public class LineReader {
       self.ringBell()
     }
   }
-  
+
   private func refreshHints(editState: EditState) throws -> String {
     guard let hintsCallback = self.hintsCallback,
           let (hint, properties) = hintsCallback(editState.buffer) else {
@@ -680,7 +680,7 @@ public class LineReader {
       return properties.apply(to: hint) + AnsiCodes.origTermColor
     }
   }
-  
+
   private func withRawMode(body: () throws -> ()) throws {
     var originalTermios: termios = termios()
     defer {
@@ -690,10 +690,10 @@ public class LineReader {
       throw LineReaderError.generalError("could not get term attributes")
     }
     var raw = originalTermios
-    raw.c_iflag &= ~UInt(BRKINT | ICRNL | INPCK | ISTRIP | IXON)
-    raw.c_oflag &= ~UInt(OPOST)
-    raw.c_cflag |= UInt(CS8)
-    raw.c_lflag &= ~UInt(ECHO | ICANON | IEXTEN | ISIG)
+    raw.c_iflag &= ~UInt32(BRKINT | ICRNL | INPCK | ISTRIP | IXON)
+    raw.c_oflag &= ~UInt32(OPOST)
+    raw.c_cflag |= UInt32(CS8)
+    raw.c_lflag &= ~UInt32(ECHO | ICANON | IEXTEN | ISIG)
     // VMIN = 16
     raw.c_cc.16 = 1
     guard tcsetattr(self.inputFile, TCSADRAIN, &raw) >= 0 else {
