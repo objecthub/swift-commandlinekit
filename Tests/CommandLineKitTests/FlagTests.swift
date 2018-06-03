@@ -36,14 +36,6 @@ import XCTest
 
 class FlagTests: XCTestCase {
   
-  override func setUp() {
-    super.setUp()
-  }
-  
-  override func tearDown() {
-    super.tearDown()
-  }
-  
   func testLongFlagNames2() throws {
     let flags = Flags(["--one", "--four", "912", "--three", "--five", "-3.141",
                        "--six", "six", "seven"])
@@ -106,4 +98,10 @@ class FlagTests: XCTestCase {
     XCTAssertNil(seven.value)
     XCTAssert(flags.parameters.count == 1 && flags.parameters[0] == "seven")
   }
+  
+  static let allTests = [
+    ("testLongFlagNames2", testLongFlagNames2),
+    ("testLongFlagNames", testLongFlagNames),
+    ("testShortFlagNames", testShortFlagNames),
+  ]
 }

@@ -38,6 +38,7 @@ import XCTest
 @testable import CommandLineKit
 
 class LineReaderHistoryTests: XCTestCase {
+  
   func testHistoryAddItem() {
     let h = LineReaderHistory()
     h.add("Test")
@@ -171,4 +172,20 @@ class LineReaderHistoryTests: XCTestCase {
     XCTAssertEqual(h.historyItems.count, 2)
     XCTAssertEqual(h.historyItems, ["Test 2", "Test 3"])
   }
+  
+  static let allTests = [
+    ("testHistoryAddItem", testHistoryAddItem),
+    ("testHistoryDoesNotAddDuplicatedLines", testHistoryDoesNotAddDuplicatedLines),
+    ("testHistoryHonorsMaxLength", testHistoryHonorsMaxLength),
+    ("testHistoryRemovesEntriesWhenMaxLengthIsSet", testHistoryRemovesEntriesWhenMaxLengthIsSet),
+    ("testHistoryNavigationReturnsNilWhenHistoryEmpty",
+     testHistoryNavigationReturnsNilWhenHistoryEmpty),
+    ("testHistoryNavigationReturnsSingleItemWhenHistoryHasOneItem",
+     testHistoryNavigationReturnsSingleItemWhenHistoryHasOneItem),
+    ("testHistoryStopsAtBeginning", testHistoryStopsAtBeginning),
+    ("testHistoryNavigationStopsAtEnd", testHistoryNavigationStopsAtEnd),
+    ("testHistorySavesToFile", testHistorySavesToFile),
+    ("testHistoryLoadsFromFile", testHistoryLoadsFromFile),
+    ("testHistoryLoadingRespectsMaxLength", testHistoryLoadingRespectsMaxLength),
+  ]
 }

@@ -58,4 +58,12 @@ class AnsiCodesTests: XCTestCase {
   func testHomeCursor() {
     XCTAssertEqual(AnsiCodes.homeCursor, "\u{001B}[H")
   }
+  
+  static let allTests = [
+    ("testGenerateEscapeCode", testGenerateEscapeCode),
+    ("testEraseRight", testEraseRight),
+    ("testCursorForward", testCursorForward),
+    ("testClearScreen", testClearScreen),
+    ("testHomeCursor", testHomeCursor),
+  ]
 }

@@ -175,4 +175,19 @@ class EditStateTests: XCTestCase {
     XCTAssertEqual(s.buffer, "eHllo")
     XCTAssertEqual(s.location, s.buffer.index(s.buffer.startIndex, offsetBy: 2))
   }
+  
+  static let allTests = [
+    ("testInitEmptyBuffer", testInitEmptyBuffer),
+    ("testInsertCharacter", testInsertCharacter),
+    ("testBackspace", testBackspace),
+    ("testMoveLeft", testMoveLeft),
+    ("testMoveRight", testMoveRight),
+    ("testMoveHome", testMoveHome),
+    ("testMoveEnd", testMoveEnd),
+    ("testRemovePreviousWord", testRemovePreviousWord),
+    ("testDeleteToEndOfLine", testDeleteToEndOfLine),
+    ("testDeleteCharacter", testDeleteCharacter),
+    ("testEraseCharacterRight", testEraseCharacterRight),
+    ("testSwapCharacters", testSwapCharacters),
+  ]
 }
