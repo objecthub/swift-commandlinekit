@@ -36,6 +36,7 @@
 
 import Foundation
 
+
 public class LineReader {
 
   /// Does this terminal support this line reader?
@@ -702,10 +703,10 @@ public class LineReader {
       throw LineReaderError.generalError("could not get term attributes")
     }
     var raw = originalTermios
-    raw.c_iflag &= ~UInt32(BRKINT | ICRNL | INPCK | ISTRIP | IXON)
-    raw.c_oflag &= ~UInt32(OPOST)
-    raw.c_cflag |= UInt32(CS8)
-    raw.c_lflag &= ~UInt32(ECHO | ICANON | IEXTEN | ISIG)
+    raw.c_iflag &= ~tcflag_t(BRKINT | ICRNL | INPCK | ISTRIP | IXON)
+    raw.c_oflag &= ~tcflag_t(OPOST)
+    raw.c_cflag |= tcflag_t(CS8)
+    raw.c_lflag &= ~tcflag_t(ECHO | ICANON | IEXTEN | ISIG)
     // VMIN = 16
     raw.c_cc.16 = 1
     guard tcsetattr(self.inputFile, TCSADRAIN, &raw) >= 0 else {

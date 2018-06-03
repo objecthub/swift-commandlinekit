@@ -34,53 +34,58 @@
 import Foundation
 import CommandLineKit
 
-print("Detected terminal: \(Terminal.current)")
-print(Terminal.fullColorSupport ? "Full color support" : "No color support")
-print(LineReader.supportedByTerminal ? "LineReader support" : "No LineReader support")
+func main() {
+  print("Detected terminal: \(Terminal.current)")
+  print(Terminal.fullColorSupport ? "Full color support" : "No color support")
+  print(LineReader.supportedByTerminal ? "LineReader support" : "No LineReader support")
 
-if let ln = LineReader() {
-  ln.setCompletionCallback { currentBuffer in
-    let completions = [
-      "Hello, world!",
-      "Hello, Linenoise!",
-      "Swift is Awesome!"
-    ]
-    return completions.filter { $0.hasPrefix(currentBuffer) }
-  }
-  ln.setHintsCallback { currentBuffer in
-    let hints = [
-      "Carpe Diem",
-      "Lorem Ipsum",
-      "Swift is Awesome!"
-    ]
-    let filtered = hints.filter { $0.hasPrefix(currentBuffer) }
-    if let hint = filtered.first {
-      let hintText = String(hint.dropFirst(currentBuffer.count))
-      return (hintText, TextColor.grey.properties)
-    } else {
-      return nil
+  if let ln = LineReader() {
+    ln.setCompletionCallback { currentBuffer in
+      let completions = [
+        "Hello, world!",
+        "Hello, Linenoise!",
+        "Swift is Awesome!"
+      ]
+      return completions.filter { $0.hasPrefix(currentBuffer) }
     }
-  }
-  print("Type 'exit' to quit")
-  var done = false
-  while !done {
-    do {
-      let output = try ln.readLine(prompt: "> ",
-                                   maxCount: 200,
-                                   strippingNewline: true,
-                                   promptProperties: TextProperties(.green, nil, .bold),
-                                   readProperties: TextProperties(.blue, nil),
-                                   parenProperties: TextProperties(.red, nil, .bold))
-      print("Entered: \(output)")
-      ln.addHistory(output)
-      if output == "exit" {
-        break
+    ln.setHintsCallback { currentBuffer in
+      let hints = [
+        "Carpe Diem",
+        "Lorem Ipsum",
+        "Swift is Awesome!"
+      ]
+      let filtered = hints.filter { $0.hasPrefix(currentBuffer) }
+      if let hint = filtered.first {
+        let hintText = String(hint.dropFirst(currentBuffer.count))
+        return (hintText, TextColor.grey.properties)
+      } else {
+        return nil
       }
-    } catch LineReaderError.CTRLC {
-      print("\nCaptured CTRL+C. Quitting.")
-      done = true
-    } catch {
-      print(error)
+    }
+    print("Type 'exit' to quit")
+    var done = false
+    while !done {
+      do {
+        let output = try ln.readLine(prompt: "> ",
+                                     maxCount: 200,
+                                     strippingNewline: true,
+                                     promptProperties: TextProperties(.green, nil, .bold),
+                                     readProperties: TextProperties(.blue, nil),
+                                     parenProperties: TextProperties(.red, nil, .bold))
+        print("Entered: \(output)")
+        ln.addHistory(output)
+        if output == "exit" {
+          break
+        }
+      } catch LineReaderError.CTRLC {
+        print("\nCaptured CTRL+C. Quitting.")
+        done = true
+      } catch {
+        print(error)
+      }
     }
   }
 }
+
+main()
+

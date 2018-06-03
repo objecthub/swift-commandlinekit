@@ -69,6 +69,8 @@
 		CC2324892087DA70007D582B /* BackgroundColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundColor.swift; sourceTree = "<group>"; };
 		CC23248B2087E6EB007D582B /* TextProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProperties.swift; sourceTree = "<group>"; };
 		CC23248F208945B8007D582B /* Terminal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Terminal.swift; sourceTree = "<group>"; };
+		CC5E472E20C4260700F21B03 /* LinuxMain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LinuxMain.swift; sourceTree = "<group>"; };
+		CC5E473020C4263400F21B03 /* LinuxMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinuxMain.swift; path = Tests/LinuxMain.swift; sourceTree = SOURCE_ROOT; };
 		CC7A60E7207A62A5007376A0 /* CommandLineKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CommandLineKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC7A60EA207A62A5007376A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		CC7A60EC207A62A5007376A0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				CC7A60EA207A62A5007376A0 /* main.swift */,
+				CC5E472E20C4260700F21B03 /* LinuxMain.swift */,
 				CC7A60EC207A62A5007376A0 /* Info.plist */,
 			);
 			name = CommandLineKitDemo;
@@ -191,6 +194,7 @@
 				CCFC2B0B207A6FAD00EDDADD /* LineReaderHistoryTests.swift */,
 				CCFC2B0D207A6FD600EDDADD /* EditStateTests.swift */,
 				CCFC2B0F207A6FFA00EDDADD /* AnsiCodesTests.swift */,
+				CC5E473020C4263400F21B03 /* LinuxMain.swift */,
 				CCFC2AF0207A69B900EDDADD /* Info.plist */,
 			);
 			name = CommandLineKitTests;
