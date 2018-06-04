@@ -610,16 +610,12 @@ public class LineReader {
   private func moveLeft(editState: EditState) throws {
     if editState.moveLeft() {
       try self.updateCursorPos(editState: editState)
-    } else {
-      self.ringBell()
     }
   }
 
   private func moveRight(editState: EditState) throws {
     if editState.moveRight() {
       try self.updateCursorPos(editState: editState)
-    } else {
-      self.ringBell()
     }
   }
 
@@ -658,8 +654,6 @@ public class LineReader {
   private func deleteCharacter(editState: EditState) throws {
     if editState.deleteCharacter() {
       try self.refreshLine(editState: editState)
-    } else {
-      self.ringBell()
     }
   }
 

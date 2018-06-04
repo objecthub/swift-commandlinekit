@@ -45,6 +45,7 @@ public struct AnsiCodes {
   /// The following line is a hack. It is the only reliable way I could get "Terminal.app" on
   /// macOS to return to the beginning of the line
   public static let beginningOfLine: String = cursorBackward(3000) + cursorBackward(999)
+  public static let endOfLine: String = cursorForward(3000) + cursorForward(999)
   
   /// Clear screen
   public static let clearScreen: String = escapeCode("2J")
