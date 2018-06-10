@@ -10,11 +10,11 @@
 ## Overview
 
 This is a library supporting the development of command-line tools in
-the programming language Swift on macOS. The library provides the following
-functionality:
+the programming language Swift on macOS. It also compiles under Linux.
+The library provides the following functionality:
 
-   - Management of command-line arguments
-   - Usage of escape sequences in XTerms
+   - Management of command-line arguments,
+   - Usage of escape sequences on terminals, and
    - Reading strings on terminals using a lineread-inspired implementation
      based on the library [Linenoise-Swift](https://github.com/andybest/linenoise-swift),
      but supporting unicode input, multiple lines, and styled text.
@@ -143,9 +143,10 @@ CommandLineKit includes a significantly improved version of the "readline" API o
 styled text. It supports all the existing features such as _advanced keyboard support_, _history_,
 _text completion_, and _hints_.
 
-The following code illustrates the usage of the LineReader API:
+The following code illustrates the usage of the
+[LineReader](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/LineReader.swift) API:
 
-```
+```swift
 if let ln = LineReader() {
   ln.setCompletionCallback { currentBuffer in
     let completions = [
