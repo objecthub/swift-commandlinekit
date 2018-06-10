@@ -47,14 +47,14 @@ public class Flags {
   /// parameters.
   internal static let terminator = "---"
   
-  /// Prefix for long flag names (consisting of multiple characters)
+  /// Prefix for long flag names (consisting of multiple characters).
   internal static let longNamePrefix = "--"
   
-  /// Prefix for short flag names (consisting of a single character)
+  /// Prefix for short flag names (consisting of a single character).
   internal static let shortNamePrefix = "-"
   
   /// The registered flags.
-  private var descriptors: [Flag] = []
+  public private(set) var descriptors: [Flag] = []
   
   /// Internal map from short name to flag.
   private var shortNameMap: [Character : Flag] = [:]
@@ -62,21 +62,26 @@ public class Flags {
   /// Internal map from long name to flag.
   private var longNameMap: [String : Flag] = [:]
   
-  /// The command-line arguments
+  /// The name of the command-line tool.
+  public let toolName: String
+  
+  /// The command-line arguments.
   public let arguments: [String]
   
-  /// Sequence of global parameters not associated with a flag
+  /// Sequence of global parameters not associated with a flag.
   public private(set) var parameters: [String] = []
   
   /// Initializes a flag set using the default command-line arguments.
   public init() {
     var args = CommandLine.arguments
     args.removeFirst()
+    self.toolName = CommandLine.arguments.first ?? "<unknown>"
     self.arguments = args
   }
   
   /// Initializes a flag set from the given command-line.
-  public init(_ arguments: [String]) {
+  public init(toolName: String = "<unknown>", arguments: [String]) {
+    self.toolName = toolName
     self.arguments = arguments
   }
   
@@ -157,11 +162,13 @@ public class Flags {
   /// parameters. Function `set` is used to persist the parsed values of type `T`.
   public func argument<T: ConvertibleFromString>(_ shortName: Character?,
                                                  _ longName: String? = nil,
+                                                 paramIdent: String? = nil,
                                                  description: String,
                                                  repeated: Bool = false,
                                                  set: @escaping (T) -> Void) -> Argument {
     let flag = Argument(shortName: shortName,
                         longName: longName,
+                        paramIdent: paramIdent,
                         description: description,
                         repeated: repeated,
                         set: set)
@@ -173,10 +180,12 @@ public class Flags {
   /// name, and description. `value` defines an optional default parameter value.
   public func argument<T: ConvertibleFromString>(_ shortName: Character?,
                                                  _ longName: String? = nil,
+                                                 paramIdent: String? = nil,
                                                  description: String,
                                                  value: T? = nil) -> SingletonArgument<T> {
     let flag = SingletonArgument<T>(shortName: shortName,
                                     longName: longName,
+                                    paramIdent: paramIdent,
                                     description: description,
                                     value: value)
     self.register(flag)
@@ -187,14 +196,44 @@ public class Flags {
   /// name, and description. `maxCount` determines how many parameters are accepted at most.
   public func arguments<T: ConvertibleFromString>(_ shortName: Character?,
                                                   _ longName: String? = nil,
+                                                  paramIdent: String? = nil,
                                                   description: String,
                                                   maxCount: Int = Int.max) -> RepeatedArgument<T> {
     let flag = RepeatedArgument<T>(shortName: shortName,
                                    longName: longName,
+                                   paramIdent: paramIdent,
                                    description: description,
                                    maxCount: maxCount)
     self.register(flag)
     return flag
+  }
+  
+  public func usageDescription(usageName: String = "USAGE:",
+                               synopsis: String = "[<option> ...] [--] [<arg> ...]",
+                               usageStyle: TextProperties = TextProperties.none,
+                               optionsName: String = "OPTIONS:",
+                               flagStyle: TextProperties = TextProperties.none,
+                               indent: String = "  ") -> String {
+    var buffer = usageStyle.apply(to: "\(usageName) \(self.toolName) \(synopsis)")
+    buffer += "\n\(optionsName)\n"
+    for flag in self.descriptors {
+      var flagStr = ""
+      if let shortName = flag.shortName {
+        flagStr += "-\(shortName)"
+      }
+      if let longName = flag.longName {
+        if flag.shortName != nil {
+          flagStr += ", "
+        }
+        flagStr += "--\(longName)"
+      }
+      if let argument = flag as? Argument {
+        flagStr += " \(argument.paramIdent)"
+      }
+      buffer += indent + flagStyle.apply(to: flagStr)
+      buffer += "\n\(indent)\(indent)\(flag.helpDescription)\n"
+    }
+    return buffer
   }
 }
 
@@ -207,18 +246,25 @@ extension Flags {
   
   public func string(_ shortName: Character?,
                      _ longName: String? = nil,
+                     paramIdent: String? = nil,
                      description: String,
                      value: String? = nil) -> SingletonArgument<String> {
-    return self.argument(shortName, longName, description: description, value: value)
+    return self.argument(shortName,
+                         longName,
+                         paramIdent: paramIdent,
+                         description: description,
+                         value: value)
   }
   
   public func `enum`<T: RawRepresentable>(_ shortName: Character?,
                                           _ longName: String? = nil,
+                                          paramIdent: String? = nil,
                                           description: String,
                                           value: T? = nil) -> SingletonArgument<T>
                     where T.RawValue: ConvertibleFromString {
     let flag = SingletonArgument<T>(shortName: shortName,
                                     longName: longName,
+                                    paramIdent: paramIdent,
                                     description: description,
                                     value: value,
                                     parse: T.from)
@@ -228,32 +274,49 @@ extension Flags {
   
   public func int(_ shortName: Character?,
                   _ longName: String? = nil,
+                  paramIdent: String? = nil,
                   description: String,
                   value: Int? = nil) -> SingletonArgument<Int> {
-    return self.argument(shortName, longName, description: description, value: value)
+    return self.argument(shortName,
+                         longName,
+                         paramIdent: paramIdent,
+                         description: description,
+                         value: value)
   }
   
   public func double(_ shortName: Character?,
                      _ longName: String? = nil,
+                     paramIdent: String? = nil,
                      description: String,
                      value: Double? = nil) -> SingletonArgument<Double> {
-    return self.argument(shortName, longName, description: description, value: value)
+    return self.argument(shortName,
+                         longName,
+                         paramIdent: paramIdent,
+                         description: description,
+                         value: value)
   }
   
   public func strings(_ shortName: Character?,
                       _ longName: String? = nil,
+                      paramIdent: String? = nil,
                       description: String,
                       maxCount: Int = Int.max) -> RepeatedArgument<String> {
-    return self.arguments(shortName, longName, description: description, maxCount: maxCount)
+    return self.arguments(shortName,
+                          longName,
+                          paramIdent: paramIdent,
+                          description: description,
+                          maxCount: maxCount)
   }
   
   public func enums<T: RawRepresentable>(_ shortName: Character?,
                                          _ longName: String? = nil,
+                                         paramIdent: String? = nil,
                                          description: String,
                                          maxCount: Int = Int.max) -> RepeatedArgument<T>
                    where T.RawValue: ConvertibleFromString {
       let flag = RepeatedArgument<T>(shortName: shortName,
                                      longName: longName,
+                                     paramIdent: paramIdent,
                                      description: description,
                                      maxCount: maxCount,
                                      parse: T.from)
@@ -263,15 +326,25 @@ extension Flags {
   
   public func ints(_ shortName: Character?,
                    _ longName: String? = nil,
+                   paramIdent: String? = nil,
                    description: String,
                    maxCount: Int = Int.max) -> RepeatedArgument<Int> {
-    return self.arguments(shortName, longName, description: description, maxCount: maxCount)
+    return self.arguments(shortName,
+                          longName,
+                          paramIdent: paramIdent,
+                          description: description,
+                          maxCount: maxCount)
   }
   
   public func doubles(_ shortName: Character?,
                       _ longName: String? = nil,
+                      paramIdent: String? = nil,
                       description: String,
                       maxCount: Int = Int.max) -> RepeatedArgument<Double> {
-    return self.arguments(shortName, longName, description: description, maxCount: maxCount)
+    return self.arguments(shortName,
+                          longName,
+                          paramIdent: paramIdent,
+                          description: description,
+                          maxCount: maxCount)
   }
 }

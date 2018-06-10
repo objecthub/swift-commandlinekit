@@ -37,8 +37,8 @@ import XCTest
 class FlagTests: XCTestCase {
   
   func testLongFlagNames2() throws {
-    let flags = Flags(["--one", "--four", "912", "--three", "--five", "-3.141",
-                       "--six", "six", "seven"])
+    let flags = Flags(arguments: ["--one", "--four", "912", "--three", "--five", "-3.141",
+                                  "--six", "six", "seven"])
     let one = flags.option(nil, "one", description: "the one option")
     let two = flags.option(nil, "two", description: "the two option")
     let three = flags.option(nil, "three", description: "the three option")
@@ -58,8 +58,8 @@ class FlagTests: XCTestCase {
   }
   
   func testLongFlagNames() throws {
-    let flags = Flags(["--one", "--four", "912", "--three", "--five", "-3.141",
-                       "--six", "six", "seven"])
+    let flags = Flags(arguments: ["--one", "--four", "912", "--three", "--five", "-3.141",
+                                  "--six", "six", "seven"])
     let one = flags.option(nil, "one", description: "the one option")
     let two = flags.option(nil, "two", description: "the two option")
     let three = flags.option(nil, "three", description: "the three option")
@@ -79,8 +79,8 @@ class FlagTests: XCTestCase {
   }
   
   func testShortFlagNames() throws {
-    let flags = Flags(["-a", "-d", "912", "-c", "-e", "-3.141",
-                       "-f", "six", "seven"])
+    let flags = Flags(arguments: ["-a", "-d", "912", "-c", "-e", "-3.141",
+                                  "-f", "six", "seven"])
     let one = flags.option("a", description: "the one option")
     let two = flags.option("b", description: "the two option")
     let three = flags.option("c", description: "the three option")

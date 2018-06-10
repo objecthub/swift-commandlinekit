@@ -134,19 +134,28 @@ public final class Option: Flag {
 /// responsible for parsing the string parameters and persisting the result.
 ///
 public class Argument: Flag {
+  
+  /// Is this argument repeated?
   public let repeated: Bool
+  
+  /// Handler for parsing and persisting argument values.
   internal private(set) var handler: (String) throws -> Void
+  
+  /// A readable parameter name, used for documentation purposes.
+  public let paramIdent: String
   
   /// Initializes an argument from the given short name, long name, and description. `repeated`
   /// needs to be set to true if the argument accepts multiple parameters. `handler` is used
   /// for parsing and persisting parameters.
   public init(shortName: Character?,
               longName: String?,
+              paramIdent: String? = nil,
               description: String,
               repeated: Bool = false,
               handler: @escaping (String) throws -> Void) {
     self.repeated = repeated
     self.handler = handler
+    self.paramIdent = paramIdent == nil ? (repeated ? "<value> ..." : "<value>") : paramIdent!
     super.init(shortName: shortName, longName: longName, description: description)
   }
   
@@ -156,12 +165,14 @@ public class Argument: Flag {
   /// type `T`.
   public convenience init<T>(shortName: Character?,
                              longName: String?,
+                             paramIdent: String? = nil,
                              description: String,
                              repeated: Bool = false,
                              parse: @escaping (String) -> T?,
                              set: @escaping (T) throws -> Void) {
     self.init(shortName: shortName,
               longName: longName,
+              paramIdent: paramIdent,
               description: description,
               repeated: repeated,
               handler: { x in })
@@ -174,11 +185,13 @@ public class Argument: Flag {
   /// method. `set` persists values of type `T`.
   public convenience init<T: ConvertibleFromString>(shortName: Character?,
                                                     longName: String?,
+                                                    paramIdent: String? = nil,
                                                     description: String,
                                                     repeated: Bool = false,
                                                     set: @escaping (T) throws -> Void) {
     self.init(shortName: shortName,
               longName: longName,
+              paramIdent: paramIdent,
               description: description,
               repeated: repeated,
               handler: { x in })
@@ -191,12 +204,14 @@ public class Argument: Flag {
   /// method. `set` persists values of type `T`.
   public convenience init<T: RawRepresentable>(shortName: Character?,
                                                longName: String?,
+                                               paramIdent: String? = nil,
                                                description: String,
                                                repeated: Bool = false,
                                                set: @escaping (T) throws -> Void)
                          where T.RawValue: ConvertibleFromString {
     self.init(shortName: shortName,
               longName: longName,
+              paramIdent: paramIdent,
               description: description,
               repeated: repeated,
               handler: { x in })
@@ -269,12 +284,14 @@ public final class SingletonArgument<T>: Argument {
   /// values of type `T`.
   public init(shortName: Character?,
               longName: String?,
+              paramIdent: String? = nil,
               description: String,
               value: T? = nil,
               parse: @escaping (String) -> T?) {
     self.value = value
     super.init(shortName: shortName,
                longName: longName,
+               paramIdent: paramIdent,
                description: description,
                handler: { x in })
     self.setHandler(parse: parse, set: { [unowned self] value in self.value = value })
@@ -287,10 +304,12 @@ extension SingletonArgument where T: ConvertibleFromString {
   /// `value` is a default value for the parameter. The default parsing function is used.
   public convenience init(shortName: Character?,
                           longName: String?,
+                          paramIdent: String? = nil,
                           description: String,
                           value: T? = nil) {
     self.init(shortName: shortName,
               longName: longName,
+              paramIdent: paramIdent,
               description: description,
               value: value,
               parse: T.from)
@@ -312,6 +331,7 @@ public final class RepeatedArgument<T>: Argument {
   /// into values of type `T`.
   public init(shortName: Character?,
               longName: String?,
+              paramIdent: String? = nil,
               description: String,
               maxCount: Int = Int.max,
               parse: @escaping (String) -> T?) {
@@ -319,6 +339,7 @@ public final class RepeatedArgument<T>: Argument {
     self.value = []
     super.init(shortName: shortName,
                longName: longName,
+               paramIdent: paramIdent,
                description: description,
                repeated: true,
                handler: { x in })
@@ -338,10 +359,12 @@ extension RepeatedArgument where T: ConvertibleFromString {
   /// is used.
   public convenience init(shortName: Character?,
                           longName: String?,
+                          paramIdent: String? = nil,
                           description: String,
                           maxCount: Int = Int.max) {
     self.init(shortName: shortName,
               longName: longName,
+              paramIdent: paramIdent,
               description: description,
               maxCount: maxCount,
               parse: T.from)
