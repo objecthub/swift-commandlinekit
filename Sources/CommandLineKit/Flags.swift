@@ -73,9 +73,13 @@ public class Flags {
   
   /// Initializes a flag set using the default command-line arguments.
   public init() {
+    if let toolPath = CommandLine.arguments.first {
+      self.toolName = URL(fileURLWithPath: toolPath).lastPathComponent
+    } else {
+      self.toolName = "<unknown>"
+    }
     var args = CommandLine.arguments
     args.removeFirst()
-    self.toolName = CommandLine.arguments.first ?? "<unknown>"
     self.arguments = args
   }
   
@@ -128,6 +132,33 @@ public class Flags {
       } else {
         self.parameters.append(arg)
       }
+    }
+  }
+  
+  /// Parses the command-line and returns a readable error message if parsing did not succeed.
+  public func parsingFailure() -> String? {
+    do {
+      try self.parse()
+      return nil
+    } catch let error as FlagError {
+      let flagname = error.flag?.longName ?? error.flag?.shortName?.description
+      var message = error.flag == nil ? "error parsing flags: "
+                                      : "error parsing flag `\(flagname!)`: "
+      switch error.kind {
+        case .unknownFlag(let str):
+          message += "unknown flag `\(str)`"
+        case .missingValue:
+          message += "missing value"
+        case .malformedValue(let str):
+          message += "malformed value `\(str)`"
+        case .illegalFlagCombination(let str):
+          message += "illegal flag combination with `\(str)`"
+        case .tooManyValues(let str):
+          message += "too many values from `\(str)`"
+      }
+      return message
+    } catch {
+      return "unknown error while parsing flags"
     }
   }
   
@@ -208,6 +239,8 @@ public class Flags {
     return flag
   }
   
+  /// Returns a human readable usage description text that can be printed for helping users
+  /// better understand the available flags.
   public func usageDescription(usageName: String = "USAGE:",
                                synopsis: String = "[<option> ...] [--] [<arg> ...]",
                                usageStyle: TextProperties = TextProperties.none,
@@ -231,7 +264,7 @@ public class Flags {
         flagStr += " \(argument.paramIdent)"
       }
       buffer += indent + flagStyle.apply(to: flagStr)
-      buffer += "\n\(indent)\(indent)\(flag.helpDescription)\n"
+      buffer += "\n\(indent)\(indent)\(indent)\(flag.helpDescription)\n"
     }
     return buffer
   }

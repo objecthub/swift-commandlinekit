@@ -234,7 +234,7 @@ public class Argument: Flag {
     var i = index
     while i < args.count {
       let arg = args[i]
-      if arg == "---" || arg.hasPrefix("--") {
+      if arg == Flags.terminator || arg.hasPrefix(Flags.longNamePrefix) {
         guard self.repeated else {
           throw FlagError(.missingValue, self)
         }

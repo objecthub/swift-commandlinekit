@@ -33,6 +33,11 @@
 
 import Foundation
 
+///
+/// A `TextProperties` struct bundles a text color, a background color and a text style
+/// in one object. Text properties can be merged with the `with(:)` functions and applied to
+/// a string with the `apply(to:)` function.
+///
 public struct TextProperties: Hashable {
   let textColor: TextColor?
   let backgroundColor: BackgroundColor?
