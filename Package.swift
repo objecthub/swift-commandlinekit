@@ -42,7 +42,6 @@ import PackageDescription
 
 let package = Package(
   name: "CommandLineKit",
-  swiftLanguageVersions: [4],
   products: [
     .library(name: "CommandLineKit", targets: ["CommandLineKit"]),
     .executable(name: "CommandLineKitDemo", targets: ["CommandLineKitDemo"])
@@ -57,5 +56,6 @@ let package = Package(
             exclude: []),
     .testTarget(name: "CommandLineKitTests",
                 dependencies: ["CommandLineKit"])
-  ]
+  ],
+  swiftLanguageVersions: [4]
 )
