@@ -1,4 +1,4 @@
-// swift-tools-version:4.1
+// swift-tools-version:4.2
 //
 //  Package.swift
 //  CommandLineKit
@@ -42,6 +42,7 @@ import PackageDescription
 
 let package = Package(
   name: "CommandLineKit",
+  swiftLanguageVersions: [4],
   products: [
     .library(name: "CommandLineKit", targets: ["CommandLineKit"]),
     .executable(name: "CommandLineKitDemo", targets: ["CommandLineKitDemo"])
