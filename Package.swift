@@ -57,5 +57,5 @@ let package = Package(
     .testTarget(name: "CommandLineKitTests",
                 dependencies: ["CommandLineKit"])
   ],
-  swiftLanguageVersions: [4]
+  swiftLanguageVersions: [.v4_2]
 )
