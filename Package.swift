@@ -1,16 +1,16 @@
-// swift-tools-version:4.2
+// swift-tools-version:5.0
 //
 //  Package.swift
 //  CommandLineKit
 //
 //  Build targets by calling the Swift Package Manager in the following way for debug purposes:
-//  swift build -Xswiftc "-target" -Xswiftc "x86_64-apple-macosx10.11"
+//  swift build
 //
 //  A release can be built with these options:
-//  swift build -c release -Xswiftc -static-stdlib -Xswiftc "-target" -Xswiftc "x86_64-apple-macosx10.11"
+//  swift build -c release
 //
 //  Created by Matthias Zenger on 06/05/2017.
-//  Copyright © 2018 Google LLC
+//  Copyright © 2018-2019 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -42,6 +42,9 @@ import PackageDescription
 
 let package = Package(
   name: "CommandLineKit",
+  platforms: [
+    .macOS(.v10_12)
+  ],
   products: [
     .library(name: "CommandLineKit", targets: ["CommandLineKit"]),
     .executable(name: "CommandLineKitDemo", targets: ["CommandLineKitDemo"])
@@ -57,5 +60,5 @@ let package = Package(
     .testTarget(name: "CommandLineKitTests",
                 dependencies: ["CommandLineKit"])
   ],
-  swiftLanguageVersions: [.v4_2]
+  swiftLanguageVersions: [.v5]
 )

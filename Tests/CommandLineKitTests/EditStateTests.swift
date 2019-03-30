@@ -3,7 +3,7 @@
 //  CommandLineKitTests
 //
 //  Created by Matthias Zenger on 08/04/2018.
-//  Copyright © 2018 Google LLC
+//  Copyright © 2018-2019 Google LLC
 //  Copyright © 2017 Andy Best <andybest.net at gmail dot com>
 //  Copyright © 2010-2014 Salvatore Sanfilippo <antirez at gmail dot com>
 //  Copyright © 2010-2013 Pieter Noordhuis <pcnoordhuis at gmail dot com>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3 (2019-03-30)
+- Migrated library to Xcode 10.2
+- Ported code to Swift 5
+
 ## 0.2 (2018-06-10)
 - Bug fixes
 - Support of usage descriptions

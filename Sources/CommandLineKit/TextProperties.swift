@@ -3,7 +3,7 @@
 //  CommandLineKit
 //
 //  Created by Matthias Zenger on 18/04/2018.
-//  Copyright © 2018 Google LLC
+//  Copyright © 2018-2019 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -170,10 +170,11 @@ public struct TextProperties: Hashable {
                           backgroundColor: backgroundColor,
                           textStyles: styles)
   }
-  
-  public var hashValue: Int {
-    return (((self.textColor?.hashValue ?? 0) &* 31) + self.textStyles.hashValue) &* 31 +
-           (self.backgroundColor?.hashValue ?? 0)
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.textColor)
+    hasher.combine(self.textStyles)
+    hasher.combine(self.backgroundColor)
   }
   
   public static func == (lhs: TextProperties, rhs: TextProperties) -> Bool {
