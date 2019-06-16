@@ -81,14 +81,14 @@ let prelude    = flags.string("p", "prelude",
                               description: "Path to prelude file which gets executed after " +
                                            "loading all provided libraries.")
 let prompt     = flags.string("r", "prompt",
-                              description: "String used as prompt in REPL.", value: AppInfo.prompt)
+                              description: "String used as prompt in REPL.", value: "> ")
 let quiet      = flags.option("q", "quiet",
                               description: "In quiet mode, optional messages are not printed.")
 let help       = flags.option("h", "help",
                               description: "Show description of usage and options of this tools.")
 
 // Parse the command-line arguments and return error message if parsing fails
-if let failure = self.parsingFailure() {
+if let failure = flags.parsingFailure() {
   print(failure)
   exit(1)
 }
@@ -122,6 +122,40 @@ Command-line tools can inspect whether a flag was set via the `Flag.wasSet` fiel
 parameters, the parameters are stored in the `Flag.value` field. The type of this field is dependent on the
 flag type. For repeated flags, an array is used.
 
+Here is an example how the flags defined by the code snippet above could be used:
+
+```swift
+// If help flag was provided, print usage description and exit tool
+if help.wasSet {
+  print(flags.usageDescription(usageName: TextStyle.bold.properties.apply(to: "usage:"),
+                               synopsis: "[<option> ...] [---] [<program> <arg> ...]",
+                               usageStyle: TextProperties.none,
+                               optionsName: TextStyle.bold.properties.apply(to: "options:"),
+                               flagStyle: TextStyle.italic.properties),
+        terminator: "")
+  exit(0)
+}
+...
+// Define how optional messages and errors are printed
+func printOpt(_ message: String) {
+  if !quiet.wasSet {
+    print(message)
+  }
+}
+...
+// Set heap size (assuming 1234 is the default if the flag is not set)
+virtualMachine.setHeapSize(heapSize.value ?? 1234)
+...
+// Register all file paths
+for path in filePaths.value {
+  virtualMachine.fileHandler.register(path)
+}
+...
+// Load prelude file if it was provided via flag `prelude`
+if let file = prelude.value {
+  virtualMachine.load(file)
+}
+```
 
 ## Text style and colors
 
