@@ -108,10 +108,11 @@ public final class Option: Flag {
   }
   
   /// Initializes an option without parsing callback.
-  public override convenience init(shortName: Character?,
-                                   longName: String?,
-                                   description: String) {
-    self.init(shortName: shortName, longName: longName, description: description, notify: {})
+  public override init(shortName: Character?,
+                       longName: String?,
+                       description: String) {
+    self.notify = {}
+    super.init(shortName: shortName, longName: longName, description: description)
   }
   
   /// Returns true
