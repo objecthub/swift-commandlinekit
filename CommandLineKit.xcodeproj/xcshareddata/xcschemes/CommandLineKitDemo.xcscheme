@@ -37,6 +37,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CCFC2AEB207A69B900EDDADD"
+               BuildableName = "CommandLineKitTests.xctest"
+               BlueprintName = "CommandLineKitTests"
+               ReferencedContainer = "container:CommandLineKit.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

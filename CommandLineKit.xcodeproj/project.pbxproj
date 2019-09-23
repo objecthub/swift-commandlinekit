@@ -281,6 +281,7 @@
 				TargetAttributes = {
 					CC7A60E6207A62A5007376A0 = {
 						CreatedOnToolsVersion = 9.3;
+						LastSwiftMigration = 1100;
 					};
 					CCFC2AD2207A636B00EDDADD = {
 						CreatedOnToolsVersion = 9.3;
@@ -503,7 +504,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -521,7 +522,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
