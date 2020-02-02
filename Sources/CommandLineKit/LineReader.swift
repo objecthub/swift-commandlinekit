@@ -169,11 +169,11 @@ public class LineReader {
                                           strippingNewline: strippingNewline)
     }
   }
-  
+
   private func readLineUnsupported(prompt: String,
                                    maxCount: Int?,
                                    strippingNewline: Bool) throws -> String {
-    print(prompt, terminator: "")
+    Swift.print(prompt, terminator: "")
     if let line = Swift.readLine(strippingNewline: strippingNewline) {
       return maxCount != nil ? String(line.prefix(maxCount!)) : line
     } else {
@@ -188,7 +188,13 @@ public class LineReader {
                                  readProperties: TextProperties,
                                  parenProperties: TextProperties) throws -> String {
     var line: String = ""
+    if fileno(stdout) == self.outputFile {
+      fflush(stdout)
+    }
     try self.withRawMode {
+      if let col = self.cursorColumn, col > 1 {
+        try self.output(text: "\n" + AnsiCodes.setCursorColumn(0))
+      }
       try self.output(text: promptProperties.apply(to: prompt))
       let editState = EditState(prompt: prompt,
                                 maxCount: maxCount,
@@ -459,30 +465,22 @@ public class LineReader {
       return nil
     }
     var buf = [UInt8]()
-    var i = 0
     while true {
       if let c = self.readByte() {
-        buf[i] = c
+        if c == 82 { // "R"
+          break
+        }
+        buf.append(c)
       } else {
         return nil
       }
-      if buf[i] == 82 { // "R"
-        break
-      }
-      i += 1
     }
-    // Check the first characters are the escape code
-    if buf[0] != 0x1B || buf[1] != 0x5B {
+    guard buf[0] == 0x1B && buf[1] == 0x5B,
+          let cursor = String(bytes: buf[2..<buf.count], encoding: .utf8)?.split(separator: ";"),
+          cursor.count == 2 else {
       return nil
     }
-    let positionText = String(bytes: buf[2..<buf.count], encoding: .utf8)
-    guard let rowCol = positionText?.split(separator: ";") else {
-      return nil
-    }
-    if rowCol.count != 2 {
-      return nil
-    }
-    return Int(String(rowCol[1]))
+    return Int(String(cursor[1]))
   }
 
   private var numColumns: Int {
@@ -593,7 +591,7 @@ public class LineReader {
   }
 
   private func output(text: String) throws {
-    if write(outputFile, text, text.utf8.count) == -1 {
+    if write(self.outputFile, text, text.utf8.count) == -1 {
       throw LineReaderError.generalError("Unable to write to output")
     }
   }

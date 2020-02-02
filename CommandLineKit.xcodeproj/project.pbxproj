@@ -276,7 +276,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0930;
-				LastUpgradeCheck = 1100;
+				LastUpgradeCheck = 1130;
 				ORGANIZATIONNAME = "Matthias Zenger";
 				TargetAttributes = {
 					CC7A60E6207A62A5007376A0 = {
@@ -494,6 +494,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = C72Z63N8M5;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CommandLineKitDemo/Info.plist";
@@ -512,6 +513,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = C72Z63N8M5;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CommandLineKitDemo/Info.plist";
