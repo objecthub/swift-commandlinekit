@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 (2020-10-04)
+- Ported code to Swift 5.3
+- Migrated project to Xcode 12.0
+
 ## 0.3.2 (2020-02-01)
 - Fixed line reader to handle buffered output
 - Migrated project to Xcode 11.3
