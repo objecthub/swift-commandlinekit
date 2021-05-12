@@ -3,7 +3,7 @@
 //  CommandLineKit
 //
 //  Created by Matthias Zenger on 07/04/2018.
-//  Copyright © 2018-2019 Google LLC
+//  Copyright © 2018-2021 Google LLC
 //  Copyright © 2017 Andy Best <andybest.net at gmail dot com>
 //  Copyright © 2010-2014 Salvatore Sanfilippo <antirez at gmail dot com>
 //  Copyright © 2010-2013 Pieter Noordhuis <pcnoordhuis at gmail dot com>
@@ -95,6 +95,12 @@ public class LineReader {
   }
 
   public static func supportedBy(terminal: String) -> Bool {
+    #if os(macOS)
+    if let xpcServiceName = ProcessInfo.processInfo.environment["XPC_SERVICE_NAME"],
+       xpcServiceName.localizedCaseInsensitiveContains("com.apple.dt.xcode") {
+      return false
+    }
+    #endif
     switch terminal {
       case "", "xcode", "dumb", "cons25", "emacs":
         return false

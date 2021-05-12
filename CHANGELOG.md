@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4 (2021-05-12)
+- Minor bug fixes
+- Migrated project to Xcode 12.5
+
 ## 0.3.3 (2020-10-04)
 - Ported code to Swift 5.3
 - Migrated project to Xcode 12.0
