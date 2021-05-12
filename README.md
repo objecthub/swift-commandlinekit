@@ -2,8 +2,8 @@
 
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-blue.svg?style=flat)](https://developer.apple.com/osx/)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-blue.svg?style=flat)](https://www.ubuntu.com/)
-[![Language: Swift 5.3](https://img.shields.io/badge/Language-Swift%205.3-green.svg?style=flat)](https://developer.apple.com/swift/)
-[![IDE: Xcode 12.0](https://img.shields.io/badge/IDE-Xcode%2012.0-orange.svg?style=flat)](https://developer.apple.com/xcode/)
+[![Language: Swift 5.4](https://img.shields.io/badge/Language-Swift%205.4-green.svg?style=flat)](https://developer.apple.com/swift/)
+[![IDE: Xcode 12.5](https://img.shields.io/badge/IDE-Xcode%2012.5-orange.svg?style=flat)](https://developer.apple.com/xcode/)
 [![Carthage: compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 [![License: BSD](https://img.shields.io/badge/License-BSD-lightgrey.svg?style=flat)](https://developers.google.com/open-source/licenses/bsd)
 
@@ -231,13 +231,13 @@ if let ln = LineReader() {
 
 ## Requirements
 
-- [Xcode 12.0](https://developer.apple.com/xcode/)
-- [Swift 5.3](https://developer.apple.com/swift/)
+- [Xcode 12.5](https://developer.apple.com/xcode/)
+- [Swift 5.4](https://developer.apple.com/swift/)
 - [Carthage](https://github.com/Carthage/Carthage)
 - [Swift Package Manager](https://swift.org/package-manager/)
 
 ## Copyright
 
 Author: Matthias Zenger (<matthias@objecthub.net>)  
-Copyright © 2018-2020 Google LLC.  
+Copyright © 2018-2021 Google LLC.  
 _Please note: This is not an official Google product._
