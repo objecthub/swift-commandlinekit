@@ -31,4 +31,10 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-main()
+#if os(Linux)
+@main struct CommandLineKitDemo {
+  static func main() {
+    demo()
+  }
+}
+#endif

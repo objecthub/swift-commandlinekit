@@ -34,7 +34,7 @@
 import Foundation
 import CommandLineKit
 
-func main() {
+func demo() {
   print("Detected terminal: \(Terminal.current)")
   print(Terminal.fullColorSupport ? "Full color support" : "No color support")
   print(LineReader.supportedByTerminal ? "LineReader support" : "No LineReader support")
@@ -87,5 +87,4 @@ func main() {
   }
 }
 
-main()
-
+demo()

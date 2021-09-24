@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.4
 //
 //  Package.swift
 //  CommandLineKit
@@ -53,12 +53,14 @@ let package = Package(
   ],
   targets: [
     .target(name: "CommandLineKit",
-            dependencies: []),
-    .target(name: "CommandLineKitDemo",
-            dependencies: ["CommandLineKit"],
-            exclude: []),
+            dependencies: [],
+            exclude: ["Info.plist"]),
+    .executableTarget(name: "CommandLineKitDemo",
+                      dependencies: ["CommandLineKit"],
+                      exclude: ["Info.plist"]),
     .testTarget(name: "CommandLineKitTests",
-                dependencies: ["CommandLineKit"])
+                dependencies: ["CommandLineKit"],
+                exclude: ["Info.plist"])
   ],
   swiftLanguageVersions: [.v5]
 )

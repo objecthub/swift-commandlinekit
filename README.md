@@ -2,8 +2,8 @@
 
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-blue.svg?style=flat)](https://developer.apple.com/osx/)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-blue.svg?style=flat)](https://www.ubuntu.com/)
-[![Language: Swift 5.4](https://img.shields.io/badge/Language-Swift%205.4-green.svg?style=flat)](https://developer.apple.com/swift/)
-[![IDE: Xcode 12.5](https://img.shields.io/badge/IDE-Xcode%2012.5-orange.svg?style=flat)](https://developer.apple.com/xcode/)
+[![Language: Swift 5.5](https://img.shields.io/badge/Language-Swift%205.5-green.svg?style=flat)](https://developer.apple.com/swift/)
+[![IDE: Xcode 13](https://img.shields.io/badge/IDE-Xcode%2013-orange.svg?style=flat)](https://developer.apple.com/xcode/)
 [![Carthage: compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 [![License: BSD](https://img.shields.io/badge/License-BSD-lightgrey.svg?style=flat)](https://developers.google.com/open-source/licenses/bsd)
 
@@ -231,8 +231,8 @@ if let ln = LineReader() {
 
 ## Requirements
 
-- [Xcode 12.5](https://developer.apple.com/xcode/)
-- [Swift 5.4](https://developer.apple.com/swift/)
+- [Xcode 13](https://developer.apple.com/xcode/)
+- [Swift 5.5](https://developer.apple.com/swift/)
 - [Carthage](https://github.com/Carthage/Carthage)
 - [Swift Package Manager](https://swift.org/package-manager/)
 
