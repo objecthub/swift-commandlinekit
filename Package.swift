@@ -43,7 +43,7 @@ import PackageDescription
 let package = Package(
   name: "CommandLineKit",
   platforms: [
-    .macOS(.v10_12)
+    .macOS(.v10_13)
   ],
   products: [
     .library(name: "CommandLineKit", targets: ["CommandLineKit"]),

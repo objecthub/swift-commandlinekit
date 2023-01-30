@@ -41,6 +41,15 @@ public struct Terminal {
   public static let current: String = ProcessInfo.processInfo.environment["TERM"] ?? ""
   
   public static var fullColorSupport: Bool {
+    // First make sure we are not running within Xcode
+    guard ProcessInfo.processInfo.environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] == nil else {
+      return false
+    }
+    // Next, check if there is an environment variable COLORTERM set to "truecolor"
+    if let cterm = ProcessInfo.processInfo.environment["COLORTERM"], cterm == "truecolor" {
+      return true
+    }
+    // Finally, apply some heuristics based on the current terminal
     return Terminal.fullColorSupport(terminal: Terminal.current)
   }
   

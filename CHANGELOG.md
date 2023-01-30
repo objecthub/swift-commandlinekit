@@ -1,5 +1,9 @@
 # Changelog
 
+# 0.3.5 (2023-01-29)
+- Be more clever about detecting color terminals
+- Migrate project to Xcode 14.2
+
 ## 0.3.4 (2021-05-12)
 - Minor bug fixes
 - Migrated project to Xcode 12.5
