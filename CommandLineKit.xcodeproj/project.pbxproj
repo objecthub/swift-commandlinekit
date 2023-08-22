@@ -11,6 +11,8 @@
 		CC23248A2087DA70007D582B /* BackgroundColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2324892087DA70007D582B /* BackgroundColor.swift */; };
 		CC23248C2087E6EB007D582B /* TextProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC23248B2087E6EB007D582B /* TextProperties.swift */; };
 		CC232490208945B8007D582B /* Terminal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC23248F208945B8007D582B /* Terminal.swift */; };
+		CC3A9BC32A92E7D3005A305E /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3A9BC22A92E7D3005A305E /* Command.swift */; };
+		CC3A9BC52A92EA48005A305E /* FlagWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3A9BC42A92EA48005A305E /* FlagWrapper.swift */; };
 		CC7A60EB207A62A5007376A0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7A60EA207A62A5007376A0 /* main.swift */; };
 		CCFC2AD7207A636B00EDDADD /* CommandLineKit.h in Headers */ = {isa = PBXBuildFile; fileRef = CCFC2AD5207A636B00EDDADD /* CommandLineKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CCFC2ADA207A636B00EDDADD /* CommandLineKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; };
@@ -69,6 +71,8 @@
 		CC2324892087DA70007D582B /* BackgroundColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundColor.swift; sourceTree = "<group>"; };
 		CC23248B2087E6EB007D582B /* TextProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProperties.swift; sourceTree = "<group>"; };
 		CC23248F208945B8007D582B /* Terminal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Terminal.swift; sourceTree = "<group>"; };
+		CC3A9BC22A92E7D3005A305E /* Command.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
+		CC3A9BC42A92EA48005A305E /* FlagWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlagWrapper.swift; sourceTree = "<group>"; };
 		CC5E472E20C4260700F21B03 /* LinuxMain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LinuxMain.swift; sourceTree = "<group>"; };
 		CC5E473020C4263400F21B03 /* LinuxMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinuxMain.swift; path = Tests/LinuxMain.swift; sourceTree = SOURCE_ROOT; };
 		CC7A60E7207A62A5007376A0 /* CommandLineKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CommandLineKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -168,6 +172,8 @@
 				CCFC2AE0207A640700EDDADD /* Flag.swift */,
 				CCFC2AE2207A662F00EDDADD /* Flags.swift */,
 				CCFC2AE4207A693000EDDADD /* FlagError.swift */,
+				CC3A9BC42A92EA48005A305E /* FlagWrapper.swift */,
+				CC3A9BC22A92E7D3005A305E /* Command.swift */,
 				CCFC2AE6207A695B00EDDADD /* ConvertibleFromString.swift */,
 				CC23248F208945B8007D582B /* Terminal.swift */,
 				CC23248B2087E6EB007D582B /* TextProperties.swift */,
@@ -350,6 +356,7 @@
 				CCFC2AE7207A695B00EDDADD /* ConvertibleFromString.swift in Sources */,
 				CC232490208945B8007D582B /* Terminal.swift in Sources */,
 				CCFC2AE3207A662F00EDDADD /* Flags.swift in Sources */,
+				CC3A9BC32A92E7D3005A305E /* Command.swift in Sources */,
 				CCFC2B02207A6B2C00EDDADD /* LineReaderHistory.swift in Sources */,
 				CCFC2AFC207A6ACA00EDDADD /* LineReader.swift in Sources */,
 				CCFC2B06207A6B6700EDDADD /* AnsiCodes.swift in Sources */,
@@ -358,6 +365,7 @@
 				CC23248A2087DA70007D582B /* BackgroundColor.swift in Sources */,
 				CCFC2AFE207A6AF100EDDADD /* LineReaderError.swift in Sources */,
 				CCFC2AFA207A6AAE00EDDADD /* ControlCharacters.swift in Sources */,
+				CC3A9BC52A92EA48005A305E /* FlagWrapper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

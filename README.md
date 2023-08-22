@@ -2,8 +2,8 @@
 
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-blue.svg?style=flat)](https://developer.apple.com/osx/)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-blue.svg?style=flat)](https://www.ubuntu.com/)
-[![Language: Swift 5.5](https://img.shields.io/badge/Language-Swift%205.5-green.svg?style=flat)](https://developer.apple.com/swift/)
-[![IDE: Xcode 13](https://img.shields.io/badge/IDE-Xcode%2013-orange.svg?style=flat)](https://developer.apple.com/xcode/)
+[![Language: Swift 5.8](https://img.shields.io/badge/Language-Swift%205.8-green.svg?style=flat)](https://developer.apple.com/swift/)
+[![IDE: Xcode 14](https://img.shields.io/badge/IDE-Xcode%2014-orange.svg?style=flat)](https://developer.apple.com/xcode/)
 [![Carthage: compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 [![License: BSD](https://img.shields.io/badge/License-BSD-lightgrey.svg?style=flat)](https://developers.google.com/open-source/licenses/bsd)
 
@@ -56,7 +56,7 @@ example: `--size 2 4 8 16`. The sequence is terminated by either the end of the 
 another flag, or the terminator "---". All command-line arguments following the terminator are not being parsed
 and are returned in the `parameters` field of the `Flags` object.
 
-### Example
+### Programmatic API
 
 Here is an [example](https://github.com/objecthub/swift-lispkit/blob/master/Sources/LispKitRepl/main.swift)
 from the [LispKit](https://github.com/objecthub/swift-lispkit) project. It uses factory methods (like `flags.string`,
@@ -73,7 +73,7 @@ let filePaths  = flags.strings("f", "filepath",
                                description: "Adds file path in which programs are searched for.")
 let libPaths   = flags.strings("l", "libpath",
                                description: "Adds file path in which libraries are searched for.")
-let heapSize   = flags.int("h", "heapsize",
+let heapSize   = flags.int("x", "heapsize",
                            description: "Initial capacity of the heap", value: 1000)
 let importLibs = flags.strings("i", "import",
                                description: "Imports library automatically after startup.")
@@ -157,6 +157,70 @@ if let file = prelude.value {
 }
 ```
 
+### Declarative API
+
+The code below illustrates how to combine the `Command` protocol with property wrappers
+declaring the various command-line flags. The whole lifecycle of a command-line tool that
+is declared like this will be managed automatically. After flags are being parsed, either
+methods `run()` or `fail(with:)` are being called (depending on whether flag parsing
+succeeds or fails).
+
+```swift
+@main struct LispKitRepl: Command {
+  @CommandArguments(short: "f", description: "Adds file path in which programs are searched for.")
+  var filePath: [String]
+  @CommandArguments(short: "l", description: "Adds file path in which libraries are searched for.")
+  var libPaths: [String]
+  @CommandArgument(short: "x", description: "Initial capacity of the heap")
+  var heapSize: Int = 1234
+  ...
+  @CommandOption(short: "h", description: "Show description of usage and options of this tools.")
+  var help: Bool
+  @CommandParameters // Inject the unparsed parameters
+  var params: [String]
+  @CommandFlags // Inject the flags object
+  var flags: Flags
+  
+  mutating func fail(with reason: String) throws {
+    print(reason)
+    exit(1)
+  }
+  
+  mutating func run() throws {
+    // If help flag was provided, print usage description and exit tool
+    if help {
+      print(flags.usageDescription(usageName: TextStyle.bold.properties.apply(to: "usage:"),
+                                   synopsis: "[<option> ...] [---] [<program> <arg> ...]",
+                                   usageStyle: TextProperties.none,
+                                   optionsName: TextStyle.bold.properties.apply(to: "options:"),
+                                   flagStyle: TextStyle.italic.properties),
+            terminator: "")
+      exit(0)
+    }
+    ...
+    // Define how optional messages and errors are printed
+    func printOpt(_ message: String) {
+      if !quiet {
+        print(message)
+      }
+    }
+    ...
+    // Set heap size
+    virtualMachine.setHeapSize(heapSize)
+    ...
+    // Register all file paths
+    for path in filePaths {
+      virtualMachine.fileHandler.register(path)
+    }
+    ...
+    // Load prelude file if it was provided via flag `prelude`
+    if let file = prelude {
+      virtualMachine.load(file)
+    }
+  }
+}
+```
+
 ## Text style and colors
 
 CommandLineKit provides a
@@ -231,13 +295,13 @@ if let ln = LineReader() {
 
 ## Requirements
 
-- [Xcode 13](https://developer.apple.com/xcode/)
-- [Swift 5.5](https://developer.apple.com/swift/)
+- [Xcode 14](https://developer.apple.com/xcode/)
+- [Swift 5.8](https://developer.apple.com/swift/)
 - [Carthage](https://github.com/Carthage/Carthage)
 - [Swift Package Manager](https://swift.org/package-manager/)
 
 ## Copyright
 
-Author: Matthias Zenger (<matthias@objecthub.net>)  
-Copyright © 2018-2021 Google LLC.  
+Author: Matthias Zenger (<matthias@objecthub.com>)  
+Copyright © 2018-2023 Google LLC.  
 _Please note: This is not an official Google product._

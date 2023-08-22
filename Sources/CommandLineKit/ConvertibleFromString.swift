@@ -92,9 +92,9 @@ extension Double: ConvertibleFromString {
 extension Bool: ConvertibleFromString {
   public init?(fromString str: String) {
     switch str.lowercased() {
-      case "true", "t", "yes", "y":
+      case "true", "t", "yes", "y", "1":
         self.init(true)
-      case "false", "f", "no", "n":
+      case "false", "f", "no", "n", "0":
         self.init(false)
       default:
         return nil
@@ -112,5 +112,14 @@ extension RawRepresentable where RawValue: ConvertibleFromString {
   
   public static func from(string str: String) -> Self? {
     return Self.init(fromString: str)
+  }
+}
+
+extension Optional: ConvertibleFromString where Wrapped: ConvertibleFromString {
+  public init?(fromString str: String) {
+    guard let value = Wrapped.from(string: str) else {
+      return nil
+    }
+    self.init(value)
   }
 }

@@ -3,7 +3,7 @@
 //  CommandLineKit
 //
 //  Created by Matthias Zenger on 25/03/2017.
-//  Copyright © 2018-2019 Google LLC
+//  Copyright © 2018-2023 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -171,7 +171,7 @@ public class Flags {
     }
     if let longName = flag.longName {
       assert(self.longNameMap[longName] == nil,
-             "ambiguous definition of flag \(Flags.shortNamePrefix)\(longName)")
+             "ambiguous definition of flag \(Flags.longNamePrefix)\(longName)")
       self.longNameMap[longName] = flag
     }
     self.descriptors.append(flag)

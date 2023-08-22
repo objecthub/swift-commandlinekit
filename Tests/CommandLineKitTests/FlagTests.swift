@@ -3,7 +3,7 @@
 //  CommandLineKitTests
 //
 //  Created by Matthias Zenger on 25/03/2017.
-//  Copyright © 2018-2019 Google LLC
+//  Copyright © 2018-2023 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -99,9 +99,86 @@ class FlagTests: XCTestCase {
     XCTAssert(flags.parameters.count == 1 && flags.parameters[0] == "seven")
   }
   
+  func testCommandFlags() throws {
+    struct TestCommand: Command {
+      static var executed = false
+      static var flagsOk = false
+      static var name: String {
+        return "TestTool"
+      }
+      static var arguments: [String] {
+        return ["--size", "23", "-h", "--repeated", "hello", "world", "!"]
+      }
+      @CommandOption(short: "h", description: "help") var help: Bool
+      @CommandArgument(description: "count") var count: Int = 7
+      @CommandArgument(description: "size") var size: Int?
+      @CommandArguments(description: "repeated", maxCount: 3) var repeated: [String]
+      @CommandParameters var params: [String]
+      @CommandFlags var flags: Flags
+      mutating func run() {
+        TestCommand.executed = true
+        TestCommand.flagsOk = self.size == 23 && self.help && self.repeated.count == 3 &&
+                              self.flags.toolName == "TestTool"
+      }
+    }
+    try TestCommand.main()
+    XCTAssert(TestCommand.executed)
+    XCTAssert(TestCommand.flagsOk)
+  }
+  
+  func testCommandFlagsFailure() throws {
+    struct TestCommand: Command {
+      static var executed = false
+      static var arguments: [String] {
+        return ["--foo", "23"]
+      }
+      @CommandOption(short: "h", description: "help") var help: Bool
+      @CommandArgument(description: "count") var count: Int = 7
+      @CommandArgument(description: "size") var size: Int?
+      @CommandArguments(description: "repeated", maxCount: 3) var repeated: [String]
+      @CommandParameters var params: [String]
+      @CommandFlags var flags: Flags
+      mutating func fail(with: String) {
+        TestCommand.executed = false
+      }
+      mutating func run() {
+        TestCommand.executed = true
+      }
+    }
+    try TestCommand.main()
+    XCTAssert(!TestCommand.executed)
+  }
+  
+  func testMoreCommandFlags() throws {
+    struct TestCommand: Command {
+      static var executed = false
+      static var arguments: [String] {
+        return []
+      }
+      @CommandArguments(short: "f", description: "Adds file path in which programs are searched for.")
+      var filePath: [String]
+      @CommandArguments(short: "l", description: "Adds file path in which libraries are searched for.")
+      var libPaths: [String]
+      @CommandArgument(short: "x", description: "Initial capacity of the heap")
+      var heapSize: Int = 1234
+      @CommandOption(short: "h", description: "Show description of usage and options of this tools.")
+      var help: Bool
+      @CommandFlags
+      var flags: Flags
+      mutating func run() {
+        TestCommand.executed = true
+      }
+    }
+    try TestCommand.main()
+    XCTAssert(TestCommand.executed)
+  }
+  
   static let allTests = [
     ("testLongFlagNames2", testLongFlagNames2),
     ("testLongFlagNames", testLongFlagNames),
     ("testShortFlagNames", testShortFlagNames),
+    ("testCommandFlags", testCommandFlags),
+    ("testCommandFlagsFailure", testCommandFlagsFailure),
+    ("testMoreCommandFlags", testMoreCommandFlags),
   ]
 }
