@@ -10,7 +10,7 @@
 //  swift build -c release
 //
 //  Created by Matthias Zenger on 06/05/2017.
-//  Copyright © 2018-2019 Google LLC
+//  Copyright © 2018-2023 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -43,7 +43,7 @@ import PackageDescription
 let package = Package(
   name: "CommandLineKit",
   platforms: [
-    .macOS(.v10_13)
+    .macOS(.v11)
   ],
   products: [
     .library(name: "CommandLineKit", targets: ["CommandLineKit"]),
@@ -57,7 +57,7 @@ let package = Package(
             exclude: ["Info.plist"]),
     .executableTarget(name: "CommandLineKitDemo",
                       dependencies: ["CommandLineKit"],
-                      exclude: ["Info.plist"]),
+                      exclude: []),
     .testTarget(name: "CommandLineKitTests",
                 dependencies: ["CommandLineKit"],
                 exclude: ["Info.plist"])

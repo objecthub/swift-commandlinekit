@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1420"
+   LastUpgradeVersion = "1500"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,8 +14,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CC7A60E6207A62A5007376A0"
-               BuildableName = "CommandLineKitDemo.app"
+               BlueprintIdentifier = "CC74D3702AEB0E980054CC5A"
+               BuildableName = "CommandLineKitDemo"
                BlueprintName = "CommandLineKitDemo"
                ReferencedContainer = "container:CommandLineKit.xcodeproj">
             </BuildableReference>
@@ -30,8 +30,8 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CC7A60E6207A62A5007376A0"
-            BuildableName = "CommandLineKitDemo.app"
+            BlueprintIdentifier = "CC74D3702AEB0E980054CC5A"
+            BuildableName = "CommandLineKitDemo"
             BlueprintName = "CommandLineKitDemo"
             ReferencedContainer = "container:CommandLineKit.xcodeproj">
          </BuildableReference>
@@ -63,8 +63,8 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CC7A60E6207A62A5007376A0"
-            BuildableName = "CommandLineKitDemo.app"
+            BlueprintIdentifier = "CC74D3702AEB0E980054CC5A"
+            BuildableName = "CommandLineKitDemo"
             BlueprintName = "CommandLineKitDemo"
             ReferencedContainer = "container:CommandLineKit.xcodeproj">
          </BuildableReference>
@@ -87,8 +87,8 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CC7A60E6207A62A5007376A0"
-            BuildableName = "CommandLineKitDemo.app"
+            BlueprintIdentifier = "CC74D3702AEB0E980054CC5A"
+            BuildableName = "CommandLineKitDemo"
             BlueprintName = "CommandLineKitDemo"
             ReferencedContainer = "container:CommandLineKit.xcodeproj">
          </BuildableReference>

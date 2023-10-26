@@ -43,9 +43,9 @@ public protocol FlagWrapper {
 /// Base class for all flag wrappers
 public class CommandFlag<Value, Flag> {
   
-  public enum State<Value, Flag> {
-    case config(shortName: Character?, longName: String?, description: String, value: Value)
-    case flag(Flag)
+  public enum State<V, F> {
+    case config(shortName: Character?, longName: String?, description: String, value: V)
+    case flag(F)
   }
   
   public var state: State<Value, Flag>
