@@ -33,7 +33,7 @@
 
 import Foundation
 
-public enum BackgroundColor: Hashable {
+public enum BackgroundColor: Sendable, Hashable {
   case black
   case red
   case green

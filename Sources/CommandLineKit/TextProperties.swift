@@ -38,7 +38,7 @@ import Foundation
 /// in one object. Text properties can be merged with the `with(:)` functions and applied to
 /// a string with the `apply(to:)` function.
 ///
-public struct TextProperties: Hashable {
+public struct TextProperties: Sendable, Hashable {
   let textColor: TextColor?
   let backgroundColor: BackgroundColor?
   let textStyles: Set<TextStyle>

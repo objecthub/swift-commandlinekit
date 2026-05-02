@@ -36,7 +36,7 @@ import Foundation
 ///
 /// Enumeration of all supported text styles.
 /// 
-public enum TextStyle: UInt8, Hashable {
+public enum TextStyle: UInt8, Sendable, Hashable {
   case `default` = 0
   case bold = 1
   case dim = 2

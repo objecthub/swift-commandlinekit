@@ -36,7 +36,7 @@ import Foundation
 ///
 /// Enumeration of all supported text colors.
 /// 
-public enum TextColor: Hashable {
+public enum TextColor: Sendable, Hashable {
   case black
   case maroon
   case green

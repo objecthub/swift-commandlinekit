@@ -38,7 +38,7 @@ import Foundation
 
 public struct AnsiCodes {
   
-  public enum CursorStyle: UInt8 {
+  public enum CursorStyle: UInt8, Sendable {
     case blockBlinking = 1
     case block = 2
     case lineBlinking = 3

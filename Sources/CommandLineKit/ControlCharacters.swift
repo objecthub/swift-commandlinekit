@@ -36,7 +36,7 @@
 
 import Foundation
 
-public enum ControlCharacters: UInt8 {
+public enum ControlCharacters: UInt8, Sendable {
   case Null = 0
   case CtrlA = 1
   case CtrlB = 2
