@@ -47,16 +47,19 @@ public enum ControlCharacters: UInt8 {
   case Bell = 7
   case CtrlH = 8
   case Tab = 9
-  case CtrlK = 11
-  case CtrlL = 12
+  case LineFeed = 10
+  case CtrlK = 11      // vertical tab
+  case CtrlL = 12      // form feed
   case Enter = 13
   case CtrlN = 14
   case CtrlP = 16
   case CtrlT = 20
   case CtrlU = 21
   case CtrlW = 23
+  case Eol = 26        // end of line
   case Esc = 27
-  case Backspace = 127
+  case Space = 32
+  case Backspace = 127 // delete
   
   var character: Character {
     return Character(UnicodeScalar(Int(self.rawValue))!)

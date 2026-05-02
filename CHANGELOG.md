@@ -1,5 +1,10 @@
 # Changelog
 
+# 1.0 (2023-08-23)
+- Provide declarative API for defining command-line tools
+- Improve color-detection for terminals
+- Migrate framework to Xcode 14
+
 # 0.3.5 (2023-01-29)
 - Be more clever about detecting color terminals
 - Migrate project to Xcode 14.2

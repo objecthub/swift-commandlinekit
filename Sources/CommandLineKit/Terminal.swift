@@ -3,7 +3,7 @@
 //  CommandLineKit
 //
 //  Created by Matthias Zenger on 19/04/2018.
-//  Copyright © 2018-2019 Google LLC
+//  Copyright © 2018-2026 Google LLC
 //  Copyright © 2017 Andy Best <andybest.net at gmail dot com>
 //  Copyright © 2010-2014 Salvatore Sanfilippo <antirez at gmail dot com>
 //  Copyright © 2010-2013 Pieter Noordhuis <pcnoordhuis at gmail dot com>
@@ -38,8 +38,21 @@ import Foundation
 
 public struct Terminal {
   
+  /// Returns the current size of the terminal in terms of a tuple whose
+  /// first component refers to the number of lines, and whose second
+  /// component refers to the number of columns.
+  public static var size: (lines: Int, columns: Int)? {
+    var ws = winsize()
+    if ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0, ws.ws_col > 0 {
+      return (lines: Int(ws.ws_row), columns: Int(ws.ws_col))
+    }
+    return nil
+  }
+  
+  /// Current terminal identifier
   public static let current: String = ProcessInfo.processInfo.environment["TERM"] ?? ""
   
+  /// Does the current terminal support full color mode?
   public static var fullColorSupport: Bool {
     // First make sure we are not running within Xcode
     guard ProcessInfo.processInfo.environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] == nil else {
@@ -53,6 +66,7 @@ public struct Terminal {
     return Terminal.fullColorSupport(terminal: Terminal.current)
   }
   
+  /// Does the given terminal support full color?
   public static func fullColorSupport(terminal: String) -> Bool {
     // A rather dumb way of detecting colour support
     return terminal.contains("256")

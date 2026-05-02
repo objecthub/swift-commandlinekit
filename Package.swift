@@ -1,4 +1,4 @@
-// swift-tools-version:5.4
+// swift-tools-version:5.5
 //
 //  Package.swift
 //  CommandLineKit
@@ -10,7 +10,7 @@
 //  swift build -c release
 //
 //  Created by Matthias Zenger on 06/05/2017.
-//  Copyright © 2018-2023 Google LLC
+//  Copyright © 2018-2026 Google LLC
 //
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -43,24 +43,39 @@ import PackageDescription
 let package = Package(
   name: "CommandLineKit",
   platforms: [
-    .macOS(.v11)
+    .macOS(.v11),
+    .iOS(.v15),
+    .tvOS(.v15),
+    .watchOS(.v8)
   ],
   products: [
-    .library(name: "CommandLineKit", targets: ["CommandLineKit"]),
-    .executable(name: "CommandLineKitDemo", targets: ["CommandLineKitDemo"])
+    .library(
+      name: "CommandLineKit",
+      targets: ["CommandLineKit"]
+    ),
+    .executable(
+      name: "CommandLineKitDemo",
+      targets: ["CommandLineKitDemo"]
+    )
   ],
   dependencies: [
   ],
   targets: [
-    .target(name: "CommandLineKit",
-            dependencies: [],
-            exclude: ["Info.plist"]),
-    .executableTarget(name: "CommandLineKitDemo",
-                      dependencies: ["CommandLineKit"],
-                      exclude: []),
-    .testTarget(name: "CommandLineKitTests",
-                dependencies: ["CommandLineKit"],
-                exclude: ["Info.plist"])
+    .target(
+      name: "CommandLineKit",
+      dependencies: [],
+      exclude: ["Info.plist"]
+    ),
+    .executableTarget(
+      name: "CommandLineKitDemo",
+      dependencies: ["CommandLineKit"],
+      exclude: ["Info.plist"]
+    ),
+    .testTarget(
+      name: "CommandLineKitTests",
+      dependencies: ["CommandLineKit"],
+      exclude: ["Info.plist"]
+    )
   ],
   swiftLanguageVersions: [.v5]
 )

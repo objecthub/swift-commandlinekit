@@ -38,7 +38,11 @@ func demo() {
   print("Detected terminal: \(Terminal.current)")
   print(Terminal.fullColorSupport ? "Full color support" : "No color support")
   print(LineReader.supportedByTerminal ? "LineReader support" : "No LineReader support")
-
+  if let size = Terminal.size {
+    print("Terminal size: \(size.lines) lines, \(size.columns) columns")
+  } else {
+    print("Could not detect terminal size")
+  }
   if let ln = LineReader() {
     ln.setCompletionCallback { currentBuffer in
       let completions = [

@@ -37,6 +37,16 @@
 import Foundation
 
 public struct AnsiCodes {
+  
+  public enum CursorStyle: UInt8 {
+    case blockBlinking = 1
+    case block = 2
+    case lineBlinking = 3
+    case line = 4
+    case barBlinking = 5
+    case bar = 6
+  }
+  
   public static let CSI: String = "\u{001B}["
   
   public static let eraseRight: String = escapeCode("0K")
@@ -49,6 +59,7 @@ public struct AnsiCodes {
   
   /// Clear screen
   public static let clearScreen: String = escapeCode("2J")
+  public static let clearScreenCursorHome: String = AnsiCodes.clearScreen + AnsiCodes.homeCursor
   public static let clearCursorToBottom: String = escapeCode("0J")
   public static let clearTopToCursor: String = escapeCode("1J")
   
@@ -68,6 +79,10 @@ public struct AnsiCodes {
     return AnsiCodes.CSI + input
   }
   
+  public static func setCursorStyle(_ style: CursorStyle) -> String {
+    return escapeCode("\(style.rawValue) q")
+  }
+  
   public static func setCursorColumn(_ column: Int) -> String {
     return escapeCode("\(column)G")
   }
@@ -76,40 +91,60 @@ public struct AnsiCodes {
     return escapeCode("\(row);\(column)H")
   }
   
-  public static func cursorUp(_ rows: Int) -> String {
+  public static func cursorUp(_ rows: Int = 1) -> String {
     guard rows > 0 else {
       return ""
     }
     return escapeCode("\(rows)A")
   }
   
-  public static func cursorDown(_ rows: Int) -> String {
+  public static func cursorDown(_ rows: Int = 1) -> String {
     guard rows > 0 else {
       return ""
     }
     return escapeCode("\(rows)B")
   }
   
-  public static func cursorForward(_ columns: Int) -> String {
+  public static func cursorForward(_ columns: Int = 1) -> String {
     guard columns > 0 else {
       return ""
     }
     return escapeCode("\(columns)C")
   }
   
-  public static func cursorBackward(_ columns: Int) -> String {
+  public static func cursorBackward(_ columns: Int = 1) -> String {
     guard columns > 0 else {
       return ""
     }
     return escapeCode("\(columns)D")
   }
   
-  public static func nextLine(_ lines: Int) -> String {
+  public static func nextLine(_ lines: Int = 1) -> String {
     return escapeCode("\(lines)E")
   }
   
-  public static func previousLine(_ lines: Int) -> String {
+  public static func previousLine(_ lines: Int = 1) -> String {
     return escapeCode("\(lines)F")
+  }
+  
+  public static func moveLineDown(_ lines: Int = 1) -> String {
+    return escapeCode("\(lines)E")
+  }
+  
+  public static func moveLineUp(_ lines: Int = 1) -> String {
+    return escapeCode("\(lines)F")
+  }
+  
+  public static func insertLine(_ lines: Int = 1) -> String {
+    return escapeCode("\(lines)L")
+  }
+  
+  public static func deleteLine(_ lines: Int = 1) -> String {
+    return escapeCode("\(lines)M")
+  }
+  
+  public static func deleteChar(_ chars: Int = 1) -> String {
+    return escapeCode("\(chars)P")
   }
   
   public static func termColor(color: Int, bold: Bool) -> String {
