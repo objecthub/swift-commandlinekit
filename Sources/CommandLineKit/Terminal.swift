@@ -43,7 +43,7 @@ public struct Terminal {
   /// component refers to the number of columns.
   public static var size: (lines: Int, columns: Int)? {
     var ws = winsize()
-    if ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0, ws.ws_col > 0 {
+    if ioctl(STDOUT_FILENO, UInt(TIOCGWINSZ), &ws) >= 0, ws.ws_col > 0 {
       return (lines: Int(ws.ws_row), columns: Int(ws.ws_col))
     }
     return nil
