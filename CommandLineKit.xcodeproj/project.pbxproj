@@ -17,6 +17,8 @@
 		CC74D3792AEB0EC50054CC5A /* LinuxMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC74D3782AEB0EC50054CC5A /* LinuxMain.swift */; };
 		CC74D37B2AEB0EDD0054CC5A /* CommandLineKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; };
 		CC74D37C2AEB0EDD0054CC5A /* CommandLineKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CC8649892FB0700C00DEB33E /* AnsiText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8649882FB0700700DEB33E /* AnsiText.swift */; };
+		CC86498C2FB127E900DEB33E /* AnsiTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */; };
 		CCFC2AD7207A636B00EDDADD /* CommandLineKit.h in Headers */ = {isa = PBXBuildFile; fileRef = CCFC2AD5207A636B00EDDADD /* CommandLineKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CCFC2AE1207A640700EDDADD /* Flag.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE0207A640700EDDADD /* Flag.swift */; };
 		CCFC2AE3207A662F00EDDADD /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE2207A662F00EDDADD /* Flags.swift */; };
@@ -88,6 +90,8 @@
 		CC74D3732AEB0E980054CC5A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		CC74D3782AEB0EC50054CC5A /* LinuxMain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LinuxMain.swift; sourceTree = "<group>"; };
 		CC7CCB8D2FA6AA0800C05C77 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CC8649882FB0700700DEB33E /* AnsiText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiText.swift; sourceTree = "<group>"; };
+		CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiTextTests.swift; sourceTree = "<group>"; };
 		CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CommandLineKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCFC2AD5207A636B00EDDADD /* CommandLineKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CommandLineKit.h; sourceTree = "<group>"; };
 		CCFC2AD6207A636B00EDDADD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -195,6 +199,7 @@
 				CCFC2AE6207A695B00EDDADD /* ConvertibleFromString.swift */,
 				CC23248F208945B8007D582B /* Terminal.swift */,
 				CC23248B2087E6EB007D582B /* TextProperties.swift */,
+				CC8649882FB0700700DEB33E /* AnsiText.swift */,
 				CCFC2AFF207A6B1000EDDADD /* TextColor.swift */,
 				CC2324872087D9E4007D582B /* TextStyle.swift */,
 				CC2324892087DA70007D582B /* BackgroundColor.swift */,
@@ -218,6 +223,7 @@
 				CCFC2B0B207A6FAD00EDDADD /* LineReaderHistoryTests.swift */,
 				CCFC2B0D207A6FD600EDDADD /* EditStateTests.swift */,
 				CCFC2B0F207A6FFA00EDDADD /* AnsiCodesTests.swift */,
+				CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */,
 				CC5E473020C4263400F21B03 /* LinuxMain.swift */,
 				CCFC2AF0207A69B900EDDADD /* Info.plist */,
 			);
@@ -374,6 +380,7 @@
 				CCFC2B04207A6B4100EDDADD /* EditState.swift in Sources */,
 				CCFC2AE5207A693000EDDADD /* FlagError.swift in Sources */,
 				CCFC2AE7207A695B00EDDADD /* ConvertibleFromString.swift in Sources */,
+				CC8649892FB0700C00DEB33E /* AnsiText.swift in Sources */,
 				CC232490208945B8007D582B /* Terminal.swift in Sources */,
 				CCFC2AE3207A662F00EDDADD /* Flags.swift in Sources */,
 				CC3A9BC32A92E7D3005A305E /* Command.swift in Sources */,
@@ -395,6 +402,7 @@
 			files = (
 				CCFC2AF8207A69DE00EDDADD /* FlagTests.swift in Sources */,
 				CCFC2B0E207A6FD600EDDADD /* EditStateTests.swift in Sources */,
+				CC86498C2FB127E900DEB33E /* AnsiTextTests.swift in Sources */,
 				CCFC2B0C207A6FAD00EDDADD /* LineReaderHistoryTests.swift in Sources */,
 				CCFC2B10207A6FFA00EDDADD /* AnsiCodesTests.swift in Sources */,
 			);

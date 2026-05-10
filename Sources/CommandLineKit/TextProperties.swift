@@ -38,7 +38,7 @@ import Foundation
 /// in one object. Text properties can be merged with the `with(:)` functions and applied to
 /// a string with the `apply(to:)` function.
 ///
-public struct TextProperties: Sendable, Hashable {
+public struct TextProperties: Sendable, Equatable, Hashable {
   let textColor: TextColor?
   let backgroundColor: BackgroundColor?
   let textStyles: Set<TextStyle>
@@ -61,6 +61,35 @@ public struct TextProperties: Sendable, Hashable {
     self.backgroundColor = bgcolor
   }
   
+  public init(codes: [UInt8]) {
+    var color: TextColor? = nil
+    var backgroundColor: BackgroundColor? = nil
+    var styles: Set<TextStyle> = []
+    var i = 0
+    while i < codes.count {
+      if (i + 2) < codes.count {
+        if codes[i] == 38 && codes[i + 1] == 5 {
+          color = TextColor(colorCode: codes[i + 2], fullColorSupport: true)
+          i += 2
+          continue
+        } else if codes[i] == 48 && codes[i + 1] == 5 {
+          backgroundColor = BackgroundColor(colorCode: codes[i + 2], fullColorSupport: true)
+          i += 2
+          continue
+        }
+      }
+      if let c = TextColor(colorCode: codes[i]) {
+        color = c
+      } else if let bg = BackgroundColor(colorCode: codes[i]) {
+        backgroundColor = bg
+      } else if let style = TextStyle(rawValue: codes[i]) {
+        styles.insert(style)
+      }
+      i += 1
+    }
+    self.init(textColor: color, backgroundColor: backgroundColor, textStyles: styles)
+  }
+  
   public var isEmpty: Bool {
     return self.textColor == nil && self.backgroundColor == nil && self.textStyles.isEmpty
   }
@@ -73,6 +102,20 @@ public struct TextProperties: Sendable, Hashable {
     return TextProperties(textColor: properties.textColor ?? self.textColor,
                           backgroundColor: properties.backgroundColor ?? self.backgroundColor,
                           textStyles: styles)
+  }
+  
+  public func intersect(with properties: TextProperties) -> TextProperties {
+    var styles: Set<TextStyle> = []
+    for style in properties.textStyles {
+      if self.textStyles.contains(style) { 
+        styles.insert(style)
+      }
+    }
+    return TextProperties(
+      textColor: (self.textColor == properties.textColor) ? self.textColor : nil,
+      backgroundColor: (self.backgroundColor == properties.backgroundColor) ? self.backgroundColor
+                                                                            : nil,
+      textStyles: styles)
   }
   
   public func with(_ tcolor: TextColor) -> TextProperties {
@@ -122,7 +165,7 @@ public struct TextProperties: Sendable, Hashable {
   
   public static func extract(from str: String) -> (TextProperties, String) {
     let (codes, res) = TextProperties.extractCodes(from: str)
-    return (TextProperties.interpret(codes: codes), res)
+    return (TextProperties(codes: codes), res)
   }
   
   private static func extractCodes(from string: String) -> ([UInt8], String) {
@@ -138,37 +181,6 @@ public struct TextProperties: Sendable, Hashable {
     let endIndex = string.index(string.endIndex, offsetBy: -"\(AnsiCodes.CSI)0m".count)
     let text = String(string[startIndex..<endIndex])
     return (codes, text)
-  }
-  
-  private static func interpret(codes: [UInt8]) -> TextProperties {
-    var color: TextColor? = nil
-    var backgroundColor: BackgroundColor? = nil
-    var styles: Set<TextStyle> = []
-    var i = 0
-    while i < codes.count {
-      if (i + 2) < codes.count {
-        if codes[i] == 38 && codes[i + 1] == 5 {
-          color = TextColor(colorCode: codes[i + 2], fullColorSupport: true)
-          i += 2
-          continue
-        } else if codes[i] == 48 && codes[i + 1] == 5 {
-          backgroundColor = BackgroundColor(colorCode: codes[i + 2], fullColorSupport: true)
-          i += 2
-          continue
-        }
-      }
-      if let c = TextColor(colorCode: codes[i]) {
-        color = c
-      } else if let bg = BackgroundColor(colorCode: codes[i]) {
-        backgroundColor = bg
-      } else if let style = TextStyle(rawValue: codes[i]) {
-        styles.insert(style)
-      }
-      i += 1
-    }
-    return TextProperties(textColor: color,
-                          backgroundColor: backgroundColor,
-                          textStyles: styles)
   }
 
   public func hash(into hasher: inout Hasher) {
