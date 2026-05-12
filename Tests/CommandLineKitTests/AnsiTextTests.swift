@@ -389,6 +389,13 @@ class AnsiTextTests: XCTestCase {
                               fill: TextProperties(.red))
     XCTAssertEqual(lines2.count, 1)
     XCTAssertEqual(lines2[0].count, 20) // Should be padded to maxWidth
+    let words2: [AnsiText.Normalized] = [AnsiText.Normalized()]
+    let lines3 = words2.joined(separator: " ",
+                               maxWidth: 20,
+                               align: .left,
+                               fill: .green)
+    XCTAssertEqual(lines3.count, 1)
+    XCTAssertEqual(lines3[0].count, 20)
   }
   
   func testJoinedWithMaxWidthRightAlign() {

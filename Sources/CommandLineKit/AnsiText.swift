@@ -31,6 +31,8 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+import Foundation
+
 ///
 /// `AnsiText` represents text with ANSI formatting properties such as colors
 /// and styles. It supports string interpolation and can be composed of plain
@@ -712,7 +714,7 @@ extension Array<AnsiText.Normalized?> {
         insert()
       }
     }
-    if !currLine.isEmpty {
+    if !currLine.isEmpty || self.isEmpty {
       insert()
     }
     return lines
