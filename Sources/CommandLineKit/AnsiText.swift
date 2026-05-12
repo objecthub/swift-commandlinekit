@@ -121,15 +121,9 @@ public enum AnsiText: Sendable,
                             Collection,
                             BidirectionalCollection {
     
-    /// Empty string.
-    public static let empty: AnsiText.Normalized = Normalized("")
-    
-    /// Space character without properties.
-    public static let space: AnsiText.Normalized = Normalized(" ")
-    
     /// The segments of this normalized text, each containing text properties
     /// and a string.
-    public let segments: [(TextProperties, String)]
+    public var segments: [(TextProperties, String)]
     
     /// Initializes a new normalized ANSI text value from a segments array.
     public init(segments: [(TextProperties, String)]) {
@@ -137,7 +131,7 @@ public enum AnsiText: Sendable,
     }
     
     /// Initializes a new normalized ANSI text value from a string.
-    public init(_ string: String, properties: TextProperties = .none) {
+    public init(_ string: String = "", properties: TextProperties = .none) {
       self.init(segments: [(properties, string)], optimize: true)
     }
     
@@ -184,18 +178,53 @@ public enum AnsiText: Sendable,
       }
     }
     
+    /// Appends the given normalized text.
+    public mutating func append(_ content: Normalized) {
+      if content.isEmpty {
+        // Nothing to do
+      } else if self.segments.isEmpty {
+        self.segments = content.segments
+      } else if self.segments.last!.0 == content.segments.first!.0 {
+        self.segments[self.segments.count - 1].1 += content.segments.first!.1
+        self.segments.append(contentsOf: content.segments[1...])
+      } else {
+        self.segments.append(contentsOf: content.segments)
+      }
+    }
+    
+    /// Appends the given sequence of normalized texts.
+    public mutating func append<S>(contentsOf xs: S) where S: Sequence, S.Element == Normalized {
+      for content in xs {
+        self.append(content)
+      }
+    }
+    
     /// Appends one or more normalized text values to this one.
     ///
     /// - Parameters:
-    ///   - optimize: If `true`, adjacent segments with identical properties will be merged.
     ///   - content: The normalized text values to append.
     /// - Returns: A new normalized text containing this text followed by the appended content.
-    public func appended(optimize: Bool = true, _ content: Normalized...) -> Normalized {
+    public func appending(_ content: Normalized...) -> Normalized {
       var segments = self.segments
       for norm in content {
         segments.append(contentsOf: norm.segments)
       }
-      return Normalized(segments: segments, optimize: optimize)
+      return Normalized(segments: segments)
+    }
+    
+    /// Appends a sequence of normalized text values and returns a new normalized
+    /// text value.
+    ///
+    /// - Parameters:
+    ///   - xs: The sequence of normalized text values to append.
+    /// - Returns: A new normalized text containing this text followed by the appended content.
+    public func appending<S>(contentsOf xs: S) -> Normalized
+                  where S: Sequence, S.Element == Normalized {
+      var segments = self.segments
+      for x in xs {
+        segments.append(contentsOf: x.segments)
+      }
+      return Normalized(segments: segments)
     }
     
     /// Converts this normalized text back to an AnsiText value.
