@@ -187,9 +187,15 @@ public enum AnsiText: Sendable,
     }
     
     /// Applies the given properties to all segments
-    public mutating func apply(properties: TextProperties) {
-      for i in self.segments.indices {
-        self.segments[i].0 = self.segments[i].0.with(properties)
+    public mutating func apply(properties: TextProperties, override: Bool = true) {
+      if override {
+        for i in self.segments.indices {
+          self.segments[i].0 = self.segments[i].0.with(properties)
+        }
+      } else {
+        for i in self.segments.indices {
+          self.segments[i].0 = properties.with(self.segments[i].0)
+        }
       }
     }
     
@@ -215,10 +221,14 @@ public enum AnsiText: Sendable,
     }
     
     /// Applies the given properties to all segments and returns a new `Normalized` value.
-    public mutating func applying(properties: TextProperties) -> Normalized {
+    public func applying(properties: TextProperties, override: Bool = true) -> Normalized {
       var segments: [(TextProperties, String)] = []
       for segment in self.segments {
-        segments.append((segment.0.with(properties), segment.1))
+        if override {
+          segments.append((segment.0.with(properties), segment.1))
+        } else {
+          segments.append((properties.with(segment.0), segment.1))
+        }
       }
       return Normalized(segments: segments)
     }
