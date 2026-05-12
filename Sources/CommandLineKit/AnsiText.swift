@@ -135,8 +135,14 @@ public enum AnsiText: Sendable,
       self.init(segments: [(properties, string)], optimize: true)
     }
     
-    /// Initializes a new normalized ANSI text value from a string.
+    /// Initializes a new normalized ANSI text value from a repeated string.
     public init(repeating: String, count: Int, properties: TextProperties = .none) {
+      self.init(segments: [(properties, String(repeating: repeating, count: count))],
+                optimize: true)
+    }
+    
+    /// Initializes a new normalized ANSI text value from a repeated character.
+    public init(repeating: Character, count: Int, properties: TextProperties = .none) {
       self.init(segments: [(properties, String(repeating: repeating, count: count))],
                 optimize: true)
     }
