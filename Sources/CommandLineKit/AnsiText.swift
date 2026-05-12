@@ -114,12 +114,38 @@ public enum AnsiText: Sendable,
   /// `Normalized` flattens the hierarchical structure of `AnsiText` into a linear
   /// sequence of property-string pairs, making it easier to manipulate and render
   /// the text.
-  public struct Normalized: Sendable, Equatable, Hashable, CustomStringConvertible,
-                            Collection, BidirectionalCollection {
+  public struct Normalized: Sendable,
+                            Equatable,
+                            Hashable,
+                            CustomStringConvertible,
+                            Collection,
+                            BidirectionalCollection {
+    
+    /// Empty string.
+    static let empty: AnsiText.Normalized = Normalized("")
+    
+    /// Space character without properties.
+    static let space: AnsiText.Normalized = Normalized(" ")
     
     /// The segments of this normalized text, each containing text properties
     /// and a string.
     public let segments: [(TextProperties, String)]
+    
+    /// Initializes a new normalized ANSI text value from a segments array.
+    public init(segments: [(TextProperties, String)]) {
+      self.init(segments: segments, optimize: true)
+    }
+    
+    /// Initializes a new normalized ANSI text value from a string.
+    public init(_ string: String, properties: TextProperties = .none) {
+      self.init(segments: [(properties, string)], optimize: true)
+    }
+    
+    /// Initializes a new normalized ANSI text value from a string.
+    public init(repeating: String, count: Int, properties: TextProperties = .none) {
+      self.init(segments: [(properties, String(repeating: repeating, count: count))],
+                optimize: true)
+    }
     
     /// Initializes a new normalized ANSI text value.
     init(segments: [(TextProperties, String)], optimize: Bool = true) {
@@ -164,7 +190,7 @@ public enum AnsiText: Sendable,
     ///   - optimize: If `true`, adjacent segments with identical properties will be merged.
     ///   - content: The normalized text values to append.
     /// - Returns: A new normalized text containing this text followed by the appended content.
-    public func append(optimize: Bool = true, _ content: Normalized...) -> Normalized {
+    public func appended(optimize: Bool = true, _ content: Normalized...) -> Normalized {
       var segments = self.segments
       for norm in content {
         segments.append(contentsOf: norm.segments)
