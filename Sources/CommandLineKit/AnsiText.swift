@@ -186,6 +186,13 @@ public enum AnsiText: Sendable,
       }
     }
     
+    /// Applies the given properties to all segments
+    public mutating func apply(properties: TextProperties) {
+      for i in self.segments.indices {
+        self.segments[i].0 = self.segments[i].0.with(properties)
+      }
+    }
+    
     /// Appends the given normalized text.
     public mutating func append(_ content: Normalized) {
       if content.isEmpty {
@@ -205,6 +212,15 @@ public enum AnsiText: Sendable,
       for content in xs {
         self.append(content)
       }
+    }
+    
+    /// Applies the given properties to all segments and returns a new `Normalized` value.
+    public mutating func applying(properties: TextProperties) -> Normalized {
+      var segments: [(TextProperties, String)] = []
+      for segment in self.segments {
+        segments.append((segment.0.with(properties), segment.1))
+      }
+      return Normalized(segments: segments)
     }
     
     /// Appends one or more normalized text values to this one.
