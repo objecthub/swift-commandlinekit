@@ -31,22 +31,46 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+///
+/// `AnsiText` represents text with ANSI formatting properties such as colors
+/// and styles. It supports string interpolation and can be composed of plain
+/// text, segmented text, or text with annotations (properties like colors and
+/// styles).
+///
+/// Example usage:
+/// ```swift
+/// let text: AnsiText = "Hello \("World", properties: .init(.red, .bold))"
+/// print(text.encodedString) // Outputs ANSI-encoded colored text
+/// ```
+///
 public enum AnsiText: Sendable,
                       Equatable,
                       Hashable,
                       CustomStringConvertible,
                       ExpressibleByStringLiteral,
-                      ExpressibleByStringInterpolation {
+                      ExpressibleByStringInterpolation,
+                      Sequence {
   case plain(String)
   case segmented([AnsiText])
   indirect case annotated(TextProperties, AnsiText)
   
+  /// An empty AnsiText value.
   public static let empty: AnsiText = .plain("")
   
+  /// Creates a segmented AnsiText from multiple AnsiText values.
+  ///
+  /// - Parameter texts: A variadic list of AnsiText values to segment together.
+  /// - Returns: A segmented AnsiText containing all the provided texts.
   public static func segmented(_ texts: AnsiText...) -> AnsiText {
     return .segmented(texts)
   }
   
+  /// Creates an annotated AnsiText from multiple strings with the given properties.
+  ///
+  /// - Parameters:
+  ///   - properties: The text properties to apply to the strings.
+  ///   - strings: A variadic list of strings to annotate.
+  /// - Returns: An annotated AnsiText with the specified properties applied.
   public static func annotated(_ properties: TextProperties, _ strings: String...) -> AnsiText {
     switch strings.count {
       case 0:
@@ -58,6 +82,16 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Creates an annotated AnsiText from multiple AnsiText values with the
+  /// given properties.
+  ///
+  /// - Parameters:
+  ///   - properties: The text properties to apply to all the text values.
+  ///   - text0: The first AnsiText value.
+  ///   - text1: The second AnsiText value.
+  ///   - texts: Additional AnsiText values to include.
+  /// - Returns: An annotated AnsiText with the specified properties applied
+  ///            to all segments.
   public static func annotated(_ properties: TextProperties,
                                _ text0: AnsiText,
                                _ text1: AnsiText,
@@ -67,15 +101,27 @@ public enum AnsiText: Sendable,
     return .annotated(properties, .segmented(res))
   }
   
+  /// Specifies horizontal alignment options for text layout.
   public enum Alignment {
     case left
     case right
     case center
   }
   
-  public struct Normalized: Sendable, Equatable, Hashable {
+  /// A normalized representation of `AnsiText` that merges adjacent segments with
+  /// identical properties for more efficient storage and processing.
+  ///
+  /// `Normalized` flattens the hierarchical structure of `AnsiText` into a linear
+  /// sequence of property-string pairs, making it easier to manipulate and render
+  /// the text.
+  public struct Normalized: Sendable, Equatable, Hashable, CustomStringConvertible,
+                            Collection, BidirectionalCollection {
+    
+    /// The segments of this normalized text, each containing text properties
+    /// and a string.
     public let segments: [(TextProperties, String)]
     
+    /// Initializes a new normalized ANSI text value.
     init(segments: [(TextProperties, String)], optimize: Bool = true) {
       if optimize && segments.count > 1 {
         var optimized: [(TextProperties, String)] = []
@@ -112,6 +158,12 @@ public enum AnsiText: Sendable,
       }
     }
     
+    /// Appends one or more normalized text values to this one.
+    ///
+    /// - Parameters:
+    ///   - optimize: If `true`, adjacent segments with identical properties will be merged.
+    ///   - content: The normalized text values to append.
+    /// - Returns: A new normalized text containing this text followed by the appended content.
     public func append(optimize: Bool = true, _ content: Normalized...) -> Normalized {
       var segments = self.segments
       for norm in content {
@@ -120,6 +172,7 @@ public enum AnsiText: Sendable,
       return Normalized(segments: segments, optimize: optimize)
     }
     
+    /// Converts this normalized text back to an AnsiText value.
     public var text: AnsiText {
       var result: [AnsiText] = []
       for segment in self.segments {
@@ -128,10 +181,18 @@ public enum AnsiText: Sendable,
       return .segmented(result)
     }
     
+    /// Returns the total character count of all text segments.
     public var count: Int {
       return self.segments.reduce(0) { result, segment in result + segment.1.count }
     }
     
+    /// Splits this normalized text into multiple normalized text values based
+    /// on a separator predicate. The result does not contain empty `Normalized`
+    /// values.
+    ///
+    /// - Parameter whereSeparator: A closure that returns `true` for characters
+    ///                             that should be treated as separators.
+    /// - Returns: An array of normalized text values, split at separator characters.
     public func split(whereSeparator: (Character) -> Bool) -> [Normalized] {
       var tokens: [Normalized] = []
       var carryover: [(TextProperties, String)] = []
@@ -182,10 +243,159 @@ public enum AnsiText: Sendable,
       return tokens
     }
     
+    /// Splits this normalized text into tokens separated by whitespace characters.
+    ///
+    /// - Returns: An array of normalized text values, one for each
+    ///            whitespace-separated token.
     public func tokenize() -> [Normalized] {
       return self.split(whereSeparator: \.isWhitespace)
     }
     
+    /// Returns the ANSI-encoded string representation with all formatting
+    /// codes included. This is suitable for output to a terminal that supports
+    /// ANSI escape sequences.
+    public var encodedString: String {
+      var result = ""
+      for (properties, string) in segments {
+        result += properties.apply(to: string)
+      }
+      return result
+    }
+    
+    /// Returns the plain text content without any formatting information.
+    ///
+    /// This property provides the string representation suitable for contexts
+    /// that don't support ANSI formatting.
+    public var description: String {
+      return segments.map { $0.1 }.joined()
+    }
+    
+    /// Iterator for traversing the characters in a normalized AnsiText.
+    public struct Iterator: IteratorProtocol {
+      private var segments: [(TextProperties, String)]
+      private var segmentIndex: Int
+      private var stringIterator: String.Iterator?
+      
+      init(_ normalized: Normalized) {
+        self.segments = normalized.segments
+        self.segmentIndex = 0
+        if self.segments.isEmpty {
+          self.stringIterator = nil
+        } else {
+          self.stringIterator = self.segments[0].1.makeIterator()
+        }
+      }
+      
+      /// Returns the next character in the sequence, or `nil` if the end has been reached.
+      public mutating func next() -> (properties: TextProperties, character: Character)? {
+        // Try to get next character from current string iterator
+        while self.segmentIndex < self.segments.count {
+          if let char = self.stringIterator!.next() {
+            return (properties: self.segments[self.segmentIndex].0, character: char)
+          }
+          // Current segment exhausted, move to next segment
+          self.segmentIndex += 1
+          if self.segmentIndex < self.segments.count {
+            self.stringIterator = self.segments[self.segmentIndex].1.makeIterator()
+          } else {
+            self.stringIterator = nil
+          }
+        }
+        return nil
+      }
+    }
+    
+    /// An index into a normalized text's character sequence.
+    public struct Index: Comparable {
+      fileprivate let segmentIndex: Int
+      fileprivate let stringIndex: String.Index
+      
+      public static func < (lhs: Index, rhs: Index) -> Bool {
+        if lhs.segmentIndex != rhs.segmentIndex {
+          return lhs.segmentIndex < rhs.segmentIndex
+        }
+        return lhs.stringIndex < rhs.stringIndex
+      }
+    }
+    
+    /// The position of the first character, or `endIndex` if the text is empty.
+    public var startIndex: Index {
+      for i in self.segments.indices {
+        if !self.segments[i].1.isEmpty {
+          return Index(segmentIndex: i, stringIndex: self.segments[i].1.startIndex)
+        }
+      }
+      return self.endIndex
+    }
+    
+    /// The position one past the last character.
+    public var endIndex: Index {
+      if self.segments.isEmpty {
+        return Index(segmentIndex: 0, stringIndex: "".startIndex)
+      }
+      let lastIndex = segments.count - 1
+      return Index(segmentIndex: lastIndex, stringIndex: segments[lastIndex].1.endIndex)
+    }
+    
+    /// Returns the position immediately after the given index.
+    public func index(after i: Index) -> Index {
+      let segment = segments[i.segmentIndex]
+      let nextStringIndex = segment.1.index(after: i.stringIndex)
+      // If we're still within the current segment, return the next position in it
+      if nextStringIndex < segment.1.endIndex {
+        return Index(segmentIndex: i.segmentIndex, stringIndex: nextStringIndex)
+      }
+      // Otherwise, move to the next non-empty segment
+      for segmentIndex in (i.segmentIndex + 1)..<segments.count {
+        if !segments[segmentIndex].1.isEmpty {
+          return Index(segmentIndex: segmentIndex, stringIndex: segments[segmentIndex].1.startIndex)
+        }
+      }
+      // If no more non-empty segments, return endIndex
+      return endIndex
+    }
+    
+    /// Returns the position immediately before the given index.
+    public func index(before i: Index) -> Index {
+      let segment = segments[i.segmentIndex]
+      // If we're not at the start of the current segment, return the previous position in it
+      if i.stringIndex > segment.1.startIndex {
+        return Index(segmentIndex: i.segmentIndex, 
+                    stringIndex: segment.1.index(before: i.stringIndex))
+      }
+      
+      // Otherwise, move to the previous non-empty segment
+      for segmentIndex in (0..<i.segmentIndex).reversed() {
+        if !segments[segmentIndex].1.isEmpty {
+          let prevSegment = segments[segmentIndex]
+          return Index(segmentIndex: segmentIndex,
+                      stringIndex: prevSegment.1.index(before: prevSegment.1.endIndex))
+        }
+      }
+      
+      // This shouldn't happen if index(before:) is only called with valid indices
+      fatalError("index(before:) called on startIndex")
+    }
+    
+    /// Accesses the character and properties at the specified position.
+    public subscript(position: Index) -> (properties: TextProperties, character: Character) {
+      let segment = segments[position.segmentIndex]
+      return (properties: segment.0, character: segment.1[position.stringIndex])
+    }
+    
+    // MARK: - Sequence Conformance
+    
+    /// Creates an iterator for traversing the characters in this normalized text.
+    ///
+    /// This allows Normalized to be used in for-in loops and other sequence operations.
+    /// Note that the iterator traverses the plain text content without formatting information.
+    ///
+    /// - Returns: An iterator over the characters in the text.
+    public func makeIterator() -> Iterator {
+      return Iterator(self)
+    }
+    
+    /// Checks if two normalized text values are equal by comparing their segments.
     public static func == (lhs: Normalized, rhs: Normalized) -> Bool {
       guard lhs.segments.count == rhs.segments.count else {
         return false
@@ -199,6 +409,12 @@ public enum AnsiText: Sendable,
       return true
     }
     
+    /// Concatenates two normalized text values.
+    ///
+    /// - Parameters:
+    ///   - lhs: The left-hand side normalized text.
+    ///   - rhs: The right-hand side normalized text.
+    /// - Returns: A new normalized text containing both inputs concatenated.
     public static func + (lhs: Normalized, rhs: Normalized) -> Normalized {
       var segments = lhs.segments
       segments.append(contentsOf: rhs.segments)
@@ -238,18 +454,33 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Creates an AnsiText from a string interpolation.
+  ///
+  /// This initializer is called automatically when using string interpolation syntax.
   public init(stringInterpolation: StringInterpolation) {
     self = .segmented(stringInterpolation.segments)
   }
   
+  /// Creates an AnsiText from a plain string.
+  ///
+  /// - Parameter string: The string to wrap.
   public init(_ string: String) {
     self = .plain(string)
   }
   
+  /// Creates an AnsiText from a string literal.
+  ///
+  /// This initializer enables `AnsiText` to conform to `ExpressibleByStringLiteral`.
   public init(stringLiteral value: String) {
     self = .plain(value)
   }
   
+  /// Creates an AnsiText by repeating a character a specified number of times.
+  ///
+  /// - Parameters:
+  ///   - repeating: The character to repeat.
+  ///   - count: The number of times to repeat the character.
+  ///   - properties: Optional text properties to apply. Defaults to no properties.
   public init(repeating: Character, count: Int, properties: TextProperties = .none) {
     if properties.isEmpty {
       self = .plain(String(repeating: repeating, count: count))
@@ -258,6 +489,7 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Returns the total character count of the text, excluding formatting information.
   public var count: Int {
     switch self {
       case .plain(let str):
@@ -269,6 +501,9 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Returns the plain text content without any formatting information.
+  ///
+  /// This property provides the string representation suitable for contexts that don't support ANSI formatting.
   public var description: String {
     switch self {
       case .plain(let str):
@@ -280,6 +515,17 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Returns the ANSI-encoded string representation with all formatting codes included.
+  ///
+  /// This is suitable for output to a terminal that supports ANSI escape sequences.
+  public var encodedString: String {
+    return self.normalized.encodedString
+  }
+  
+  /// Returns a normalized representation of this text.
+  ///
+  /// Normalization flattens the hierarchical structure and merges adjacent segments
+  /// with identical properties for more efficient processing.
   public var normalized: Normalized {
     var result: [(TextProperties, String)] = []
     self.normalize(properties: .none, enterInto: &result)
@@ -299,6 +545,36 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Iterator for traversing the characters in an AnsiText.
+  public struct Iterator: IteratorProtocol {
+    private var stringIterator: String.Iterator
+    
+    init(_ text: AnsiText) {
+      self.stringIterator = text.description.makeIterator()
+    }
+    
+    /// Returns the next character in the sequence, or `nil` if the end has been reached.
+    public mutating func next() -> Character? {
+      return self.stringIterator.next()
+    }
+  }
+  
+  /// Creates an iterator for traversing the characters in this AnsiText.
+  ///
+  /// This allows AnsiText to be used in for-in loops and other sequence operations.
+  /// Note that the iterator traverses the plain text content without formatting information.
+  ///
+  /// - Returns: An iterator over the characters in the text.
+  public func makeIterator() -> Iterator {
+    return Iterator(self)
+  }
+  
+  /// Concatenates two AnsiText values.
+  ///
+  /// - Parameters:
+  ///   - lhs: The left-hand side text.
+  ///   - rhs: The right-hand side text.
+  /// - Returns: A segmented AnsiText containing both inputs.
   public static func + (lhs: AnsiText, rhs: AnsiText) -> AnsiText {
     return .segmented([lhs, rhs])
   }
@@ -306,60 +582,76 @@ public enum AnsiText: Sendable,
 
 extension Array<AnsiText.Normalized?> {
   
-  public func joined(separator: String,
+  /// Joins the elements of this array with the given separator string and
+  /// aligns the result in a field with `maxWidth` characters based on the
+  /// `align` parameter. Use `padCharacter` to pad each line individually
+  /// on the left and if `fill` is provided also on the right. `fill`
+  /// determines the text properties of the padding.
+  ///
+  /// This method performs word wrapping: when adding a word would exceed `maxWidth`,
+  /// a new line is created. `nil` elements force a line break.
+  ///
+  /// - Parameters:
+  ///   - separator: The separator string to use between elements. Defaults to a single space.
+  ///   - maxWidth: The maximum width in characters for each line.
+  ///   - align: The alignment for the content within the field.
+  ///   - padCharacter: The character to use for padding. Defaults to a space.
+  ///   - fill: Optional text properties to apply to padding characters.
+  /// - Returns: An array of normalized text values, one per line.
+  public func joined(separator: String = " ",
                      maxWidth: Int,
                      align: AnsiText.Alignment = .left,
+                     padCharacter: Character = " ",
                      fill: TextProperties? = nil) -> [AnsiText.Normalized] {
+    let pad = "\(padCharacter)"
     var lines: [AnsiText.Normalized] = []
-    var currentLine: [AnsiText.Normalized] = []
-    var currentCount = 0
+    var currLine: [AnsiText.Normalized] = []
+    var currCount = 0
     func insert() {
-      if maxWidth - currentCount > 0 {
-        var segments = currentLine.joined(separator: " ").segments
+      if maxWidth - currCount > 0 {
+        var sm = currLine.joined(separator: separator).segments
         switch align {
           case .left:
             if let fill {
-              segments.append((fill, String(repeating: " ", count: maxWidth - currentCount)))
+              sm.append((fill, String(repeating: pad, count: maxWidth - currCount)))
             }
           case .right:
-            segments.insert((fill ?? .none, String(repeating: " ", count: maxWidth - currentCount)),
-                            at: 0)
+            sm.insert((fill ?? .none, String(repeating: pad, count: maxWidth - currCount)), at: 0)
           case .center:
-            let leftCount = (maxWidth - currentCount) / 2
-            segments.insert((fill ?? .none, String(repeating: " ", count: leftCount)), at: 0)
+            let leftCount = (maxWidth - currCount) / 2
+            sm.insert((fill ?? .none, String(repeating: pad, count: leftCount)), at: 0)
             if let fill {
-              segments.append((fill,
-                               String(repeating: " ", count: maxWidth - currentCount - leftCount)))
+              sm.append((fill, String(repeating: pad, count: maxWidth - currCount - leftCount)))
             }
         }
-        lines.append(AnsiText.Normalized(segments: segments))
+        lines.append(AnsiText.Normalized(segments: sm))
       } else {
-        lines.append(currentLine.joined(separator: " "))
+        lines.append(currLine.joined(separator: separator))
       }
-      currentLine = []
-      currentCount = 0
+      currLine = []
+      currCount = 0
     }
     for word in self {
       if let word {
         let wordCount = word.count
-        if currentCount > 0 {
-          if currentCount + wordCount >= maxWidth {
+        if currCount > 0 {
+          if currCount + wordCount >= maxWidth {
             insert()
-            currentLine = [word]
-            currentCount = wordCount
+            currLine = [word]
+            currCount = wordCount
           } else {
-            currentLine.append(word)
-            currentCount += wordCount + 1
+            currLine.append(word)
+            currCount += wordCount + 1
           }
         } else {
-          currentLine.append(word)
-          currentCount += wordCount
+          currLine.append(word)
+          currCount += wordCount
         }
       } else {
         insert()
       }
     }
-    if !currentLine.isEmpty {
+    if !currLine.isEmpty {
       insert()
     }
     return lines
@@ -368,8 +660,40 @@ extension Array<AnsiText.Normalized?> {
 
 extension Array<AnsiText.Normalized> {
   
+  /// Joins the elements of this array with the given separator string and
+  /// aligns the result in a field with `maxWidth` characters based on the
+  /// `align` parameter. Use `padCharacter` to pad each line individually
+  /// on the left and if `fill` is provided also on the right. `fill`
+  /// determines the text properties of the padding.
+  ///
+  /// This method performs word wrapping: when adding a word would exceed `maxWidth`,
+  /// a new line is created.
+  ///
+  /// - Parameters:
+  ///   - separator: The separator string to use between elements. Defaults to a single space.
+  ///   - maxWidth: The maximum width in characters for each line.
+  ///   - align: The alignment for the content within the field.
+  ///   - padCharacter: The character to use for padding. Defaults to a space.
+  ///   - fill: Optional text properties to apply to padding characters.
+  /// - Returns: An array of normalized text values, one per line.
+  public func joined(separator: String = " ",
+                     maxWidth: Int,
+                     align: AnsiText.Alignment = .left,
+                     padCharacter: Character = " ",
+                     fill: TextProperties? = nil) -> [AnsiText.Normalized] {
+    return (self as [AnsiText.Normalized?]).joined(separator: separator,
+                                                   maxWidth: maxWidth,
+                                                   align: align,
+                                                   padCharacter: padCharacter,
+                                                   fill: fill)
+  }
+  
   /// Joins the normalized AnsiText objects together interjecting a separator.
-  /// This variant of `joined` will infer the properties of the separator.
+  /// This variant of `joined` will infer the properties of the separator by finding
+  /// the intersection of properties from adjacent segments.
+  ///
+  /// - Parameter separator: The separator string to place between elements.
+  /// - Returns: A single normalized text value containing all elements joined by the separator.
   public func joined(separator: String) -> AnsiText.Normalized {
     var result: [(TextProperties, String)] = []
     var carryoverProperties: TextProperties? = nil
@@ -385,7 +709,10 @@ extension Array<AnsiText.Normalized> {
     return AnsiText.Normalized(segments: result)
   }
   
-  /// Joins the AnsiText objects together interjecting an AnsiText separator.
+  /// Joins the normalized AnsiText objects together interjecting an AnsiText separator.
+  ///
+  /// - Parameter separator: The AnsiText separator to place between elements. Defaults to empty.
+  /// - Returns: A single normalized text value containing all elements joined by the separator.
   public func joined(separator: AnsiText = .segmented([])) -> AnsiText.Normalized {
     let normalizedSeparator = separator.normalized.segments
     var result: [(TextProperties, String)] = []
@@ -405,7 +732,11 @@ extension Array<AnsiText.Normalized> {
 extension Array<AnsiText> {
   
   /// Joins the AnsiText objects together interjecting a separator.
-  /// This variant of `joined` will infer the properties of the separator.
+  /// This variant of `joined` will infer the properties of the separator by finding
+  /// the intersection of properties from adjacent segments.
+  ///
+  /// - Parameter separator: The separator string to place between elements.
+  /// - Returns: A single AnsiText value containing all elements joined by the separator.
   public func joined(separator: String) -> AnsiText {
     var result: [(TextProperties, String)] = []
     var carryoverProperties: TextProperties? = nil
@@ -422,6 +753,9 @@ extension Array<AnsiText> {
   }
   
   /// Joins the AnsiText objects together interjecting an AnsiText separator.
+  ///
+  /// - Parameter separator: The AnsiText separator to place between elements. Defaults to empty.
+  /// - Returns: A single AnsiText value containing all elements joined by the separator.
   public func joined(separator: AnsiText = .segmented([])) -> AnsiText {
     let normalizedSeparator = separator.normalized.segments
     var result: [(TextProperties, String)] = []

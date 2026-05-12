@@ -44,6 +44,30 @@ public struct TextProperties: Sendable, Equatable, Hashable {
   let textStyles: Set<TextStyle>
   
   public static let none = TextProperties()
+  public static let `default` = TextProperties(textStyles: [.default])
+  public static let bold = TextProperties(textStyles: [.bold])
+  public static let dim = TextProperties(textStyles: [.dim])
+  public static let italic = TextProperties(textStyles: [.italic])
+  public static let underline = TextProperties(textStyles: [.underline])
+  public static let blink = TextProperties(textStyles: [.blink])
+  public static let swap = TextProperties(textStyles: [.swap])
+  public static let black = TextProperties(textColor: .black)
+  public static let maroon = TextProperties(textColor: .maroon)
+  public static let green = TextProperties(textColor: .green)
+  public static let olive = TextProperties(textColor: .olive)
+  public static let navy = TextProperties(textColor: .navy)
+  public static let purple = TextProperties(textColor: .purple)
+  public static let teal = TextProperties(textColor: .teal)
+  public static let silver = TextProperties(textColor: .silver)
+  public static let defaultColor = TextProperties(textColor: .default)
+  public static let grey = TextProperties(textColor: .grey)
+  public static let red = TextProperties(textColor: .red)
+  public static let lime = TextProperties(textColor: .lime)
+  public static let yellow = TextProperties(textColor: .yellow)
+  public static let blue = TextProperties(textColor: .blue)
+  public static let fuchsia = TextProperties(textColor: .fuchsia)
+  public static let aqua = TextProperties(textColor: .aqua)
+  public static let white = TextProperties(textColor: .white)
   
   public init(textColor: TextColor? = nil,
               backgroundColor: BackgroundColor? = nil,

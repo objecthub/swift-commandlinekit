@@ -36,7 +36,42 @@ import CommandLineKit
 
 @main struct CommandLineKitDemo {
   static func main() {
-    CommandLineKitDemo.demo()
+    if CommandLine.arguments.isEmpty {
+      CommandLineKitDemo.demo()
+    } else {
+      CommandLineKitDemo.richText()
+    }
+  }
+  
+  static func richText() {
+    let text: [AnsiText] = [
+      "Lorem \("ipsum", properties: .bold) dolor sit amet, ",
+      "\("consectetur adipiscing", properties: .red) elit, ",
+      .segmented(.plain("sed do "),
+                 .annotated(.underline,
+                            .segmented(.plain("eiusmod "),
+                                       .annotated(.italic,
+                                                  .segmented(
+                                                    .annotated(.bold, "tempor"),
+                                                    .plain(" incididunt"))),
+                                       .plain(" utim"))),
+                 .plain(" labore ")),
+      "ut labore et dolore magna ",
+      "aliqua. Ut enim ad minim veniam, quis nostrud exercitation ",
+      "ullamco \("\("laboris nisi ut", properties: .bold) aliquip ex", properties: .purple) ea commodo consequat. ",
+      "Duis \("aute irure dolor in \("reprehenderit", properties: .white) in", properties: TextProperties(backgroundColor: .green)) voluptate velit ",
+      "esse cillum dolore eu fugiat nulla pariatur. Excepteur sint ",
+      "occaecat cupidatat non proident, sunt in culpa qui officia ",
+      "deserunt mollit anim id est laborum."
+    ]
+    let combined = text.joined(separator: " ")
+    let tokenized: [AnsiText.Normalized?] = combined.normalized.tokenize()
+    let formatted = tokenized.joined(separator: " ",
+                                     maxWidth: 45,
+                                     align: .left)
+    for line in formatted {
+      print(line.encodedString)
+    }
   }
   
   static func demo() {

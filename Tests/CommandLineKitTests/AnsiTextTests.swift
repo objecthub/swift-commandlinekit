@@ -506,6 +506,247 @@ class AnsiTextTests: XCTestCase {
     XCTAssertTrue(normalized.segments[0].0.textStyles.contains(.bold))
   }
   
+  // MARK: - Iterator Tests (AnsiText)
+  
+  func testAnsiTextIteratorPlain() {
+    let text = AnsiText.plain("Hello")
+    var chars: [Character] = []
+    for char in text {
+      chars.append(char)
+    }
+    XCTAssertEqual(chars, Array("Hello"))
+  }
+  
+  func testAnsiTextIteratorEmpty() {
+    let text = AnsiText.empty
+    var chars: [Character] = []
+    for char in text {
+      chars.append(char)
+    }
+    XCTAssertEqual(chars, [])
+  }
+  
+  func testAnsiTextIteratorAnnotated() {
+    let properties = TextProperties(.red)
+    let text = AnsiText.annotated(properties, "Test")
+    var chars: [Character] = []
+    for char in text {
+      chars.append(char)
+    }
+    XCTAssertEqual(chars, Array("Test"))
+  }
+  
+  func testAnsiTextIteratorSegmented() {
+    let text = AnsiText.segmented([
+      .plain("Hello"),
+      .plain(" "),
+      .plain("World")
+    ])
+    var chars: [Character] = []
+    for char in text {
+      chars.append(char)
+    }
+    XCTAssertEqual(chars, Array("Hello World"))
+  }
+  
+  func testAnsiTextIteratorComplex() {
+    let props = TextProperties(.blue)
+    let text = AnsiText.segmented([
+      .annotated(props, "First"),
+      .plain(" "),
+      .annotated(props, .segmented([.plain("Second"), .plain(" Third")]))
+    ])
+    var chars: [Character] = []
+    for char in text {
+      chars.append(char)
+    }
+    XCTAssertEqual(chars, Array("First Second Third"))
+  }
+  
+  func testAnsiTextIteratorFirstAndLast() {
+    let text: AnsiText = "Hello World"
+    let chars = Array(text)
+    XCTAssertEqual(chars.first, "H")
+    XCTAssertEqual(chars.last, "d")
+  }
+  
+  func testAnsiTextIteratorEmptyFirstAndLast() {
+    let text = AnsiText.empty
+    let chars = Array(text)
+    XCTAssertNil(chars.first)
+    XCTAssertNil(chars.last)
+  }
+  
+  func testAnsiTextIteratorFilter() {
+    let text = AnsiText.plain("Hello123")
+    let letters = text.filter { $0.isLetter }
+    XCTAssertEqual(Array(letters), Array("Hello"))
+  }
+  
+  func testAnsiTextIteratorMap() {
+    let text = AnsiText.plain("abc")
+    let uppercased = text.map { $0.uppercased() }
+    XCTAssertEqual(uppercased, ["A", "B", "C"])
+  }
+  
+  func testAnsiTextIteratorContains() {
+    let text: AnsiText = "Hello World"
+    XCTAssertTrue(text.contains(where: { $0 == "H" }))
+    XCTAssertTrue(text.contains(where: { $0 == " " }))
+    XCTAssertFalse(text.contains(where: { $0 == "z" }))
+  }
+  
+  func testAnsiTextIteratorCount() {
+    let text = AnsiText.plain("Hello")
+    var count = 0
+    for _ in text {
+      count += 1
+    }
+    XCTAssertEqual(count, 5)
+    XCTAssertEqual(count, text.count)
+  }
+  
+  // MARK: - Iterator Tests (Normalized)
+  
+  func testNormalizedIteratorSingleSegment() {
+    let normalized = AnsiText.plain("Hello").normalized
+    var chars: [Character] = []
+    for item in normalized {
+      chars.append(item.character)
+    }
+    XCTAssertEqual(chars, Array("Hello"))
+  }
+  
+  func testNormalizedIteratorEmpty() {
+    let normalized = AnsiText.empty.normalized
+    var chars: [Character] = []
+    for item in normalized {
+      chars.append(item.character)
+    }
+    XCTAssertEqual(chars, [])
+  }
+  
+  func testNormalizedIteratorMultipleSegments() {
+    let props1 = TextProperties(.red)
+    let props2 = TextProperties(.blue)
+    let text = AnsiText.segmented([
+      .annotated(props1, "Red"),
+      .plain(" "),
+      .annotated(props2, "Blue")
+    ])
+    let normalized = text.normalized
+    var chars: [Character] = []
+    for item in normalized {
+      chars.append(item.character)
+    }
+    XCTAssertEqual(chars, Array("Red Blue"))
+  }
+  
+  func testNormalizedIteratorEmptySegments() {
+    let segments: [(TextProperties, String)] = [
+      (.none, ""),
+      (TextProperties(.red), "Hello"),
+      (.none, ""),
+      (.none, " World")
+    ]
+    let normalized = AnsiText.Normalized(segments: segments, optimize: false)
+    var chars: [Character] = []
+    for item in normalized {
+      chars.append(item.character)
+    }
+    XCTAssertEqual(chars, Array("Hello World"))
+  }
+  
+  func testNormalizedIteratorFirstAndLast() {
+    let normalized = AnsiText.plain("Test").normalized
+    XCTAssertEqual(normalized.first?.character, "T")
+    let chars = Array(normalized)
+    XCTAssertEqual(chars.last?.character, "t")
+  }
+  
+  func testNormalizedIteratorEmptyFirstAndLast() {
+    let normalized = AnsiText.empty.normalized
+    XCTAssertNil(normalized.first)
+    let chars = Array(normalized)
+    XCTAssertNil(chars.last)
+  }
+  
+  func testNormalizedIteratorFilter() {
+    let props = TextProperties(.green)
+    let text = AnsiText.annotated(props, "abc123def")
+    let normalized = text.normalized
+    let digits = normalized.filter { $0.character.isNumber }
+    XCTAssertEqual(digits.map { $0.character }, Array("123"))
+  }
+  
+  func testNormalizedIteratorMap() {
+    let normalized = AnsiText.plain("xyz").normalized
+    let uppercased = normalized.map { $0.character.uppercased() }
+    XCTAssertEqual(uppercased, ["X", "Y", "Z"])
+  }
+  
+  func testNormalizedIteratorContains() {
+    let normalized = AnsiText.plain("Hello World").normalized
+    XCTAssertTrue(normalized.contains(where: { $0.character == "H" }))
+    XCTAssertTrue(normalized.contains(where: { $0.character == " " }))
+    XCTAssertFalse(normalized.contains(where: { $0.character == "z" }))
+  }
+  
+  func testNormalizedIteratorCount() {
+    let normalized = AnsiText.plain("Test").normalized
+    var count = 0
+    for _ in normalized {
+      count += 1
+    }
+    XCTAssertEqual(count, 4)
+    XCTAssertEqual(count, normalized.count)
+  }
+  
+  func testNormalizedIteratorComplexProperties() {
+    let props1 = TextProperties(.red, .cyan, .bold)
+    let props2 = TextProperties(.blue, .magenta, .underline)
+    let segments: [(TextProperties, String)] = [
+      (props1, "First"),
+      (.none, " "),
+      (props2, "Second"),
+      (props1, " Third")
+    ]
+    let normalized = AnsiText.Normalized(segments: segments)
+    var result = ""
+    var i = 0
+    for item in normalized {
+      result.append(item.character)
+      i += 1
+    }
+    XCTAssertEqual(i, 18)
+    XCTAssertEqual(result, "First Second Third")
+  }
+  
+  func testIteratorCountMatchesProperty() {
+    let text: AnsiText = "Hello \("World", properties: TextProperties(.yellow))"
+    
+    // Count using iterator
+    var iteratorCount = 0
+    for _ in text {
+      iteratorCount += 1
+    }
+    
+    // Count using property
+    let propertyCount = text.count
+    
+    XCTAssertEqual(iteratorCount, propertyCount)
+    
+    // Same for normalized
+    let normalized = text.normalized
+    var normalizedIteratorCount = 0
+    for _ in normalized {
+      normalizedIteratorCount += 1
+    }
+    
+    XCTAssertEqual(normalizedIteratorCount, normalized.count)
+    XCTAssertEqual(normalizedIteratorCount, propertyCount)
+  }
+  
   static let allTests = [
     // Basic Construction
     ("testPlainTextCreation", testPlainTextCreation),
@@ -576,5 +817,32 @@ class AnsiTextTests: XCTestCase {
     ("testRoundTripNormalization", testRoundTripNormalization),
     ("testEmptySegmentsInJoin", testEmptySegmentsInJoin),
     ("testPropertiesMerging", testPropertiesMerging),
+    
+    // AnsiText Iterator Tests
+    ("testAnsiTextIteratorPlain", testAnsiTextIteratorPlain),
+    ("testAnsiTextIteratorEmpty", testAnsiTextIteratorEmpty),
+    ("testAnsiTextIteratorAnnotated", testAnsiTextIteratorAnnotated),
+    ("testAnsiTextIteratorSegmented", testAnsiTextIteratorSegmented),
+    ("testAnsiTextIteratorComplex", testAnsiTextIteratorComplex),
+    ("testAnsiTextIteratorFirstAndLast", testAnsiTextIteratorFirstAndLast),
+    ("testAnsiTextIteratorEmptyFirstAndLast", testAnsiTextIteratorEmptyFirstAndLast),
+    ("testAnsiTextIteratorFilter", testAnsiTextIteratorFilter),
+    ("testAnsiTextIteratorMap", testAnsiTextIteratorMap),
+    ("testAnsiTextIteratorContains", testAnsiTextIteratorContains),
+    ("testAnsiTextIteratorCount", testAnsiTextIteratorCount),
+    
+    // Normalized Iterator Tests
+    ("testNormalizedIteratorSingleSegment", testNormalizedIteratorSingleSegment),
+    ("testNormalizedIteratorEmpty", testNormalizedIteratorEmpty),
+    ("testNormalizedIteratorMultipleSegments", testNormalizedIteratorMultipleSegments),
+    ("testNormalizedIteratorEmptySegments", testNormalizedIteratorEmptySegments),
+    ("testNormalizedIteratorFirstAndLast", testNormalizedIteratorFirstAndLast),
+    ("testNormalizedIteratorEmptyFirstAndLast", testNormalizedIteratorEmptyFirstAndLast),
+    ("testNormalizedIteratorFilter", testNormalizedIteratorFilter),
+    ("testNormalizedIteratorMap", testNormalizedIteratorMap),
+    ("testNormalizedIteratorContains", testNormalizedIteratorContains),
+    ("testNormalizedIteratorCount", testNormalizedIteratorCount),
+    ("testNormalizedIteratorComplexProperties", testNormalizedIteratorComplexProperties),
+    ("testIteratorCountMatchesProperty", testIteratorCountMatchesProperty),
   ]
 }
