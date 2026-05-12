@@ -122,10 +122,10 @@ public enum AnsiText: Sendable,
                             BidirectionalCollection {
     
     /// Empty string.
-    static let empty: AnsiText.Normalized = Normalized("")
+    public static let empty: AnsiText.Normalized = Normalized("")
     
     /// Space character without properties.
-    static let space: AnsiText.Normalized = Normalized(" ")
+    public static let space: AnsiText.Normalized = Normalized(" ")
     
     /// The segments of this normalized text, each containing text properties
     /// and a string.
