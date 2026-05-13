@@ -1,5 +1,5 @@
 //
-//  AnnotatedText.swift
+//  AnsiText.swift
 //  CommandLineKit
 //
 //  Created by Matthias Zenger on 10/05/2026.

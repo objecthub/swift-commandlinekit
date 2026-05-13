@@ -1,11 +1,6 @@
 # Swift CommandLineKit
 
-[![Platform: macOS](https://img.shields.io/badge/Platform-macOS-blue.svg?style=flat)](https://developer.apple.com/osx/)
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-blue.svg?style=flat)](https://www.ubuntu.com/)
-[![Language: Swift 6](https://img.shields.io/badge/Language-Swift%206-green.svg?style=flat)](https://developer.apple.com/swift/)
-[![IDE: Xcode 26](https://img.shields.io/badge/IDE-Xcode%2026-orange.svg?style=flat)](https://developer.apple.com/xcode/)
-[![Carthage: compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
-[![License: BSD](https://img.shields.io/badge/License-BSD-lightgrey.svg?style=flat)](https://developers.google.com/open-source/licenses/bsd)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fobjecthub%2Fswift-commandlinekit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/objecthub/swift-commandlinekit) [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fobjecthub%2Fswift-commandlinekit%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/objecthub/swift-commandlinekit) [![IDE: Xcode 16](https://img.shields.io/badge/IDE-Xcode%2016-blue.svg?style=flat)](https://developer.apple.com/xcode/) [![Package managers: SwiftPM, Carthage](https://img.shields.io/badge/Package%20managers-SwiftPM,%20Carthage-green.svg?style=flat)](https://github.com/Carthage/Carthage) [![License: Apache](http://img.shields.io/badge/License-Apache-lightgrey.svg?style=flat)](https://raw.githubusercontent.com/objecthub/swift-numberkit/master/LICENSE)
 
 ## Overview
 
@@ -303,5 +298,6 @@ if let ln = LineReader() {
 ## Copyright
 
 Author: Matthias Zenger (<matthias@objecthub.com>)  
-Copyright © 2018-2026 Google LLC.  
+Copyright © 2018-2025 Google LLC.  
+Copyright © 2026 Matthias Zenger
 _Please note: This is not an official Google product._
