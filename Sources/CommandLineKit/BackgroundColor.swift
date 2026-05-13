@@ -33,16 +33,24 @@
 
 import Foundation
 
-public enum BackgroundColor: Sendable, Hashable {
+public enum BackgroundColor: Sendable, Equatable, Hashable {
+  case `default`
   case black
+  case white
   case red
   case green
   case yellow
   case blue
   case magenta
   case cyan
-  case white
-  case `default`
+  case lightBlack
+  case lightRed
+  case lightGreen
+  case lightYellow
+  case lightBlue
+  case lightMagenta
+  case lightCyan
+  case lightWhite
   case extended(UInt8)
   
   public init?(colorCode: UInt8, fullColorSupport all256: Bool = false) {
@@ -68,6 +76,22 @@ public enum BackgroundColor: Sendable, Hashable {
           self = .white
         case 49:
           self = .default
+        case 100:
+          self = .lightBlack
+        case 101:
+          self = .lightRed
+        case 102:
+          self = .lightGreen
+        case 103:
+          self = .lightYellow
+        case 104:
+          self = .lightBlue
+        case 105:
+          self = .lightMagenta
+        case 106:
+          self = .lightCyan
+        case 107:
+          self = .lightWhite
         default:
           return nil
       }
@@ -79,7 +103,9 @@ public enum BackgroundColor: Sendable, Hashable {
     if all256 {
       self = .extended(code)
     } else {
-      let color: BackgroundColor? = code < 8 ? BackgroundColor(colorCode: code + 40) : nil
+      let color: BackgroundColor? = code < 8 ? BackgroundColor(colorCode: code + 40)
+                                             : code < 16 ? BackgroundColor(colorCode: code + 92)
+                                                         : nil
       self = color ?? .default
     }
   }
@@ -104,6 +130,22 @@ public enum BackgroundColor: Sendable, Hashable {
         return 47
       case .default:
         return 49
+      case .lightBlack:
+        return 100
+      case .lightRed:
+        return 101
+      case .lightGreen:
+        return 102
+      case .lightYellow:
+        return 103
+      case .lightBlue:
+        return 104
+      case .lightMagenta:
+        return 105
+      case .lightCyan:
+        return 106
+      case .lightWhite:
+        return 107
       case .extended(let c):
         return c
     }

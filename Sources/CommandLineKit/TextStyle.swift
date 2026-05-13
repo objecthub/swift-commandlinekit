@@ -36,7 +36,7 @@ import Foundation
 ///
 /// Enumeration of all supported text styles.
 /// 
-public enum TextStyle: UInt8, Sendable, Hashable {
+public enum TextStyle: UInt8, Sendable, Equatable, Hashable {
   case `default` = 0
   case bold = 1
   case dim = 2
@@ -44,6 +44,7 @@ public enum TextStyle: UInt8, Sendable, Hashable {
   case underline = 4
   case blink = 5
   case swap = 7
+  case strikethrough = 9
   
   public var code: UInt8 {
     return self.rawValue

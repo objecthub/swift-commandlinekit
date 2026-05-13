@@ -39,18 +39,32 @@ import Foundation
 /// a string with the `apply(to:)` function.
 ///
 public struct TextProperties: Sendable, Equatable, Hashable {
-  let textColor: TextColor?
-  let backgroundColor: BackgroundColor?
-  let textStyles: Set<TextStyle>
+  public let textColor: TextColor?
+  public let backgroundColor: BackgroundColor?
+  public let textStyles: Set<TextStyle>
   
-  public static let none = TextProperties()
-  public static let `default` = TextProperties(textStyles: [.default])
+  // Below are convenience wrappers for individual text colors
+  // and text styles.
+  
+  public static let empty = TextProperties()
+  public static let `default` = TextProperties(textColor: .default,
+                                               backgroundColor: .default,
+                                               textStyles: [.default])
+  
+  // Basic styles
+  
+  public static let defaultStyle = TextProperties(textStyles: [.default])
   public static let bold = TextProperties(textStyles: [.bold])
   public static let dim = TextProperties(textStyles: [.dim])
   public static let italic = TextProperties(textStyles: [.italic])
   public static let underline = TextProperties(textStyles: [.underline])
   public static let blink = TextProperties(textStyles: [.blink])
   public static let swap = TextProperties(textStyles: [.swap])
+  public static let strikethrough = TextProperties(textStyles: [.strikethrough])
+  
+  // Text colors
+  
+  public static let defaultColor = TextProperties(textColor: .default)
   public static let black = TextProperties(textColor: .black)
   public static let maroon = TextProperties(textColor: .maroon)
   public static let green = TextProperties(textColor: .green)
@@ -59,7 +73,6 @@ public struct TextProperties: Sendable, Equatable, Hashable {
   public static let purple = TextProperties(textColor: .purple)
   public static let teal = TextProperties(textColor: .teal)
   public static let silver = TextProperties(textColor: .silver)
-  public static let defaultColor = TextProperties(textColor: .default)
   public static let grey = TextProperties(textColor: .grey)
   public static let red = TextProperties(textColor: .red)
   public static let lime = TextProperties(textColor: .lime)

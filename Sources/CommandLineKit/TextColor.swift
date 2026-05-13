@@ -36,24 +36,24 @@ import Foundation
 ///
 /// Enumeration of all supported text colors.
 /// 
-public enum TextColor: Sendable, Hashable {
+public enum TextColor: Sendable, Equatable, Hashable {
+  case `default`
   case black
-  case maroon
+  case grey
+  case silver
+  case white
+  case red
   case green
+  case blue
+  case yellow
+  case maroon
   case olive
   case navy
   case purple
   case teal
-  case silver
-  case `default`
-  case grey
-  case red
   case lime
-  case yellow
-  case blue
-  case fuchsia
   case aqua
-  case white
+  case fuchsia
   case extended(UInt8)
   
   public init?(colorCode: UInt8, fullColorSupport all256: Bool = false) {
@@ -110,7 +110,7 @@ public enum TextColor: Sendable, Hashable {
       if code < 8 {
         color = TextColor(colorCode: code + 30)
       } else if code < 16 {
-        color = TextColor(colorCode: code + 90)
+        color = TextColor(colorCode: code + 82)
       } else {
         color = nil
       }

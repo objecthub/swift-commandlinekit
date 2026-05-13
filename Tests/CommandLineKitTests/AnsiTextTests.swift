@@ -139,7 +139,7 @@ class AnsiTextTests: XCTestCase {
     let text = AnsiText.plain("Hello")
     let normalized = text.normalized
     XCTAssertEqual(normalized.segments.count, 1)
-    XCTAssertEqual(normalized.segments[0].0, .none)
+    XCTAssertEqual(normalized.segments[0].0, .empty)
     XCTAssertEqual(normalized.segments[0].1, "Hello")
     XCTAssertEqual(normalized.count, 5)
   }
@@ -651,10 +651,10 @@ class AnsiTextTests: XCTestCase {
   
   func testNormalizedIteratorEmptySegments() {
     let segments: [(TextProperties, String)] = [
-      (.none, ""),
+      (.empty, ""),
       (TextProperties(.red), "Hello"),
-      (.none, ""),
-      (.none, " World")
+      (.empty, ""),
+      (.empty, " World")
     ]
     let normalized = AnsiText.Normalized(segments: segments, optimize: false)
     var chars: [Character] = []
@@ -714,7 +714,7 @@ class AnsiTextTests: XCTestCase {
     let props2 = TextProperties(.blue, .magenta, .underline)
     let segments: [(TextProperties, String)] = [
       (props1, "First"),
-      (.none, " "),
+      (.empty, " "),
       (props2, "Second"),
       (props1, " Third")
     ]

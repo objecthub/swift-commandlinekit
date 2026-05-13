@@ -243,9 +243,9 @@ public class Flags {
   /// better understand the available flags.
   public func usageDescription(usageName: String = "USAGE:",
                                synopsis: String = "[<option> ...] [--] [<arg> ...]",
-                               usageStyle: TextProperties = TextProperties.none,
+                               usageStyle: TextProperties = TextProperties.empty,
                                optionsName: String = "OPTIONS:",
-                               flagStyle: TextProperties = TextProperties.none,
+                               flagStyle: TextProperties = TextProperties.empty,
                                indent: String = "  ") -> String {
     var buffer = usageStyle.apply(to: "\(usageName) \(self.toolName) \(synopsis)")
     buffer += "\n\(optionsName)\n"

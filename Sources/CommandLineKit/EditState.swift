@@ -47,9 +47,9 @@ internal class EditState {
   
   init(prompt: String,
        maxCount: Int? = nil,
-       promptProperties: TextProperties = TextProperties.none,
-       readProperties: TextProperties = TextProperties.none,
-       parenProperties: TextProperties = TextProperties.none) {
+       promptProperties: TextProperties = TextProperties.empty,
+       readProperties: TextProperties = TextProperties.empty,
+       parenProperties: TextProperties = TextProperties.empty) {
     self.prompt = prompt
     self.promptProperties = promptProperties
     self.readProperties = readProperties

@@ -133,18 +133,18 @@ public enum AnsiText: Sendable,
     }
     
     /// Initializes a new normalized ANSI text value from a string.
-    public init(_ string: String = "", properties: TextProperties = .none) {
+    public init(_ string: String = "", properties: TextProperties = .empty) {
       self.init(segments: [(properties, string)], optimize: true)
     }
     
     /// Initializes a new normalized ANSI text value from a repeated string.
-    public init(repeating: String, count: Int, properties: TextProperties = .none) {
+    public init(repeating: String, count: Int, properties: TextProperties = .empty) {
       self.init(segments: [(properties, String(repeating: repeating, count: count))],
                 optimize: true)
     }
     
     /// Initializes a new normalized ANSI text value from a repeated character.
-    public init(repeating: Character, count: Int, properties: TextProperties = .none) {
+    public init(repeating: Character, count: Int, properties: TextProperties = .empty) {
       self.init(segments: [(properties, String(repeating: repeating, count: count))],
                 optimize: true)
     }
@@ -527,13 +527,13 @@ public enum AnsiText: Sendable,
     
     // Called for each \(...) expression
     mutating public func appendInterpolation(_ value: String,
-                                             properties: TextProperties = .none) {
+                                             properties: TextProperties = .empty) {
       segments.append(.annotated(properties, .plain(value)))
     }
     
     // Called for each \(...) expression
     mutating public func appendInterpolation(_ value: AnsiText,
-                                             properties: TextProperties = .none) {
+                                             properties: TextProperties = .empty) {
       segments.append(.annotated(properties, value))
     }
     
@@ -570,7 +570,7 @@ public enum AnsiText: Sendable,
   ///   - repeating: The character to repeat.
   ///   - count: The number of times to repeat the character.
   ///   - properties: Optional text properties to apply. Defaults to no properties.
-  public init(repeating: Character, count: Int, properties: TextProperties = .none) {
+  public init(repeating: Character, count: Int, properties: TextProperties = .empty) {
     if properties.isEmpty {
       self = .plain(String(repeating: repeating, count: count))
     } else {
@@ -617,7 +617,7 @@ public enum AnsiText: Sendable,
   /// with identical properties for more efficient processing.
   public var normalized: Normalized {
     var result: [(TextProperties, String)] = []
-    self.normalize(properties: .none, enterInto: &result)
+    self.normalize(properties: .empty, enterInto: &result)
     return Normalized(segments: result)
   }
   
@@ -705,10 +705,10 @@ extension Array<AnsiText.Normalized?> {
               sm.append((fill, String(repeating: pad, count: maxWidth - currCount)))
             }
           case .right:
-            sm.insert((fill ?? .none, String(repeating: pad, count: maxWidth - currCount)), at: 0)
+            sm.insert((fill ?? .empty, String(repeating: pad, count: maxWidth - currCount)), at: 0)
           case .center:
             let leftCount = (maxWidth - currCount) / 2
-            sm.insert((fill ?? .none, String(repeating: pad, count: leftCount)), at: 0)
+            sm.insert((fill ?? .empty, String(repeating: pad, count: leftCount)), at: 0)
             if let fill {
               sm.append((fill, String(repeating: pad, count: maxWidth - currCount - leftCount)))
             }

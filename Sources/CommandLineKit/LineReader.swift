@@ -158,9 +158,9 @@ public class LineReader {
   public func readLine(prompt: String,
                        maxCount: Int? = nil,
                        strippingNewline: Bool = true,
-                       promptProperties: TextProperties = TextProperties.none,
-                       readProperties: TextProperties = TextProperties.none,
-                       parenProperties: TextProperties = TextProperties.none) throws -> String {
+                       promptProperties: TextProperties = TextProperties.empty,
+                       readProperties: TextProperties = TextProperties.empty,
+                       parenProperties: TextProperties = TextProperties.empty) throws -> String {
     tempBuf = nil
     if self.termSupported {
       return try self.readLineSupported(prompt: prompt,
