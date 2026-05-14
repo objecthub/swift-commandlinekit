@@ -458,6 +458,245 @@ class AnsiTextTests: XCTestCase {
     XCTAssertEqual(lines[0].segments.last?.0, fillProps)
   }
   
+  // MARK: - Justified Tests
+  
+  func testJustifiedLeftAlignment() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Hello").normalized,
+      AnsiText.plain("World").normalized,
+      nil
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left)
+    XCTAssertEqual(justified.count, 3)
+    XCTAssertEqual(justified[0].count, 5)
+    XCTAssertEqual(justified[1].count, 5)
+    XCTAssertEqual(justified[2].count, 0) // nil becomes empty
+    // Left alignment: text on left, padding on right
+    let justified2 = lines.justified(maxWidth: 10, align: .left, fill: .empty)
+    XCTAssertEqual(justified2.count, 3)
+    XCTAssertEqual(justified2[0].count, 10)
+    XCTAssertEqual(justified2[1].count, 10)
+    XCTAssertEqual(justified2[2].count, 0)
+    XCTAssertEqual(justified2[0].description, "Hello     ")
+    XCTAssertEqual(justified2[1].description, "World     ")
+  }
+  
+  func testJustifiedRightAlignment() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Hi").normalized,
+      AnsiText.plain("Test").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .right)
+    XCTAssertEqual(justified.count, 2)
+    XCTAssertEqual(justified[0].count, 10)
+    XCTAssertEqual(justified[1].count, 10)
+    // Right alignment: padding on left, text on right
+    XCTAssertEqual(justified[0].description, "        Hi")
+    XCTAssertEqual(justified[1].description, "      Test")
+  }
+  
+  func testJustifiedCenterAlignment() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Test").normalized,
+      AnsiText.plain("Hi").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .center)
+    XCTAssertEqual(justified.count, 2)
+    XCTAssertEqual(justified[0].count, 7)
+    XCTAssertEqual(justified[1].count, 6)
+    // Center alignment: balanced padding
+    let justified2 = lines.justified(maxWidth: 10, align: .center, fill: .empty)
+    XCTAssertEqual(justified2.count, 2)
+    XCTAssertEqual(justified2[0].count, 10)
+    XCTAssertEqual(justified2[1].count, 10)
+    XCTAssertEqual(justified2[0].description, "   Test   ")
+    XCTAssertEqual(justified2[1].description, "    Hi    ")
+  }
+  
+  func testJustifiedWithCustomPadCharacter() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Test").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left, padCharacter: "-", fill: .empty)
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 10)
+    XCTAssertEqual(justified[0].description, "Test------")
+  }
+  
+  func testJustifiedWithFillProperties() {
+    let fillProps = TextProperties(.blue)
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Text").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left, fill: fillProps)
+    
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 10)
+    
+    // Check that the padding has the fill properties
+    if justified[0].segments.count > 1 {
+      XCTAssertEqual(justified[0].segments.last?.0, fillProps)
+      XCTAssertEqual(justified[0].segments.last?.1, "      ")
+    }
+  }
+  
+  func testJustifiedAlreadyMaxWidth() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Exactly10!").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .center)
+    
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 10)
+    // Should be unchanged
+    XCTAssertEqual(justified[0].description, "Exactly10!")
+  }
+  
+  func testJustifiedExceedsMaxWidth() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("This is way too long for the width").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left)
+    
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 34) // Original length, no padding added
+    // Should be unchanged
+    XCTAssertEqual(justified[0].description, "This is way too long for the width")
+  }
+  
+  func testJustifiedEmptyLines() {
+    let lines: [AnsiText.Normalized?] = [
+      nil,
+      AnsiText.plain("").normalized,
+      nil
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .center)
+    
+    XCTAssertEqual(justified.count, 3)
+    XCTAssertEqual(justified[0].count, 0)
+    XCTAssertEqual(justified[1].count, 0)
+    XCTAssertEqual(justified[2].count, 0)
+  }
+  
+  func testJustifiedPreservesTextProperties() {
+    let props = TextProperties(.red, .yellow, .bold)
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.annotated(props, "Red").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left)
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 3)
+    // Original text should still have its properties
+    XCTAssertEqual(justified[0].segments.first?.0, props)
+    XCTAssertEqual(justified[0].segments.first?.1, "Red")
+  }
+  
+  func testJustifiedCenterOddPadding() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Odd").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .center, fill: .empty)
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 10)
+    // With 3 chars, need 7 padding. Left gets 3, right gets 4
+    XCTAssertEqual(justified[0].description, "   Odd    ")
+  }
+  
+  func testJustifiedRightAlignmentWithFillProperties() {
+    let fillProps = TextProperties(.green)
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Right").normalized
+    ]
+    let justified = lines.justified(maxWidth: 15, align: .right, fill: fillProps)
+    
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 15)
+    XCTAssertEqual(justified[0].description, "          Right")
+    
+    // First segment should be padding with fill properties
+    XCTAssertEqual(justified[0].segments.first?.0, fillProps)
+    XCTAssertEqual(justified[0].segments.first?.1, "          ")
+  }
+  
+  func testJustifiedCenterWithFillProperties() {
+    let fillProps = TextProperties.aqua
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("Center").normalized
+    ]
+    let justified = lines.justified(maxWidth: 14, align: .center, fill: fillProps)
+    
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 14)
+    XCTAssertEqual(justified[0].description, "    Center    ")
+    
+    // Both padding segments should have fill properties
+    XCTAssertEqual(justified[0].segments.first?.0, fillProps)
+    XCTAssertEqual(justified[0].segments.last?.0, fillProps)
+  }
+  
+  func testJustifiedMultipleLinesWithMixedContent() {
+    let props1 = TextProperties(.red)
+    let props2 = TextProperties(.blue)
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.annotated(props1, "Red").normalized,
+      AnsiText.annotated(props2, "Blue").normalized,
+      nil,
+      AnsiText.plain("Plain").normalized
+    ]
+    let justified = lines.justified(maxWidth: 12, align: .center, padCharacter: ".", fill: .empty)
+    XCTAssertEqual(justified.count, 4)
+    XCTAssertEqual(justified[0].description, "....Red.....")
+    XCTAssertEqual(justified[1].description, "....Blue....")
+    XCTAssertEqual(justified[2].description, "")
+    XCTAssertEqual(justified[3].description, "...Plain....")
+    // Properties should be preserved
+    XCTAssertEqual(justified[0].segments.first(where: { $0.1 == "Red" })?.0, props1)
+    XCTAssertEqual(justified[1].segments.first(where: { $0.1 == "Blue" })?.0, props2)
+  }
+  
+  func testJustifiedArrayOfNormalizedNonOptional() {
+    let lines: [AnsiText.Normalized] = [
+      AnsiText.plain("First").normalized,
+      AnsiText.plain("Second").normalized
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left, fill: .empty)
+    XCTAssertEqual(justified.count, 2)
+    XCTAssertEqual(justified[0].count, 10)
+    XCTAssertEqual(justified[1].count, 10)
+    XCTAssertEqual(justified[0].description, "First     ")
+    XCTAssertEqual(justified[1].description, "Second    ")
+  }
+  
+  func testJustifiedSingleCharacter() {
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("X").normalized
+    ]
+    let justified = lines.justified(maxWidth: 5, align: .center, fill: .empty)
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 5)
+    XCTAssertEqual(justified[0].description, "  X  ")
+  }
+  
+  func testJustifiedWithComplexSegments() {
+    // Create a normalized text with multiple segments
+    let props1 = TextProperties(.red)
+    let props2 = TextProperties(.blue)
+    let text = AnsiText.segmented([
+      .annotated(props1, "Red"),
+      .annotated(props2, "Blue")
+    ])
+    let lines: [AnsiText.Normalized?] = [text.normalized]
+    let justified = lines.justified(maxWidth: 15, align: .left, fill: .empty)
+    XCTAssertEqual(justified.count, 1)
+    XCTAssertEqual(justified[0].count, 15)
+    XCTAssertEqual(justified[0].description, "RedBlue        ")
+    // Should preserve both properties in their respective segments
+    let redSegment = justified[0].segments.first(where: { $0.1 == "Red" })
+    let blueSegment = justified[0].segments.first(where: { $0.1 == "Blue" })
+    XCTAssertEqual(redSegment?.0, props1)
+    XCTAssertEqual(blueSegment?.0, props2)
+  }
+  
   // MARK: - Complex Integration Tests
   
   func testComplexNestedStructure() {
@@ -817,6 +1056,24 @@ class AnsiTextTests: XCTestCase {
     ("testJoinedWithMaxWidthWrapping", testJoinedWithMaxWidthWrapping),
     ("testJoinedWithNilSeparators", testJoinedWithNilSeparators),
     ("testJoinedWithFillProperties", testJoinedWithFillProperties),
+    
+    // Justified
+    ("testJustifiedLeftAlignment", testJustifiedLeftAlignment),
+    ("testJustifiedRightAlignment", testJustifiedRightAlignment),
+    ("testJustifiedCenterAlignment", testJustifiedCenterAlignment),
+    ("testJustifiedWithCustomPadCharacter", testJustifiedWithCustomPadCharacter),
+    ("testJustifiedWithFillProperties", testJustifiedWithFillProperties),
+    ("testJustifiedAlreadyMaxWidth", testJustifiedAlreadyMaxWidth),
+    ("testJustifiedExceedsMaxWidth", testJustifiedExceedsMaxWidth),
+    ("testJustifiedEmptyLines", testJustifiedEmptyLines),
+    ("testJustifiedPreservesTextProperties", testJustifiedPreservesTextProperties),
+    ("testJustifiedCenterOddPadding", testJustifiedCenterOddPadding),
+    ("testJustifiedRightAlignmentWithFillProperties", testJustifiedRightAlignmentWithFillProperties),
+    ("testJustifiedCenterWithFillProperties", testJustifiedCenterWithFillProperties),
+    ("testJustifiedMultipleLinesWithMixedContent", testJustifiedMultipleLinesWithMixedContent),
+    ("testJustifiedArrayOfNormalizedNonOptional", testJustifiedArrayOfNormalizedNonOptional),
+    ("testJustifiedSingleCharacter", testJustifiedSingleCharacter),
+    ("testJustifiedWithComplexSegments", testJustifiedWithComplexSegments),
     
     // Complex Integration
     ("testComplexNestedStructure", testComplexNestedStructure),

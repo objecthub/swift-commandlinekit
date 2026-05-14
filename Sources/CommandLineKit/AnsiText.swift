@@ -275,6 +275,11 @@ public enum AnsiText: Sendable,
       return self.segments.reduce(0) { result, segment in result + segment.1.count }
     }
     
+    /// Returns the total display width of all text segments.
+    public var terminalDisplayWidth: Int {
+      return self.segments.reduce(0) { result, segment in result + segment.1.terminalDisplayWidth }
+    }
+    
     /// Splits this normalized text into multiple normalized text values based
     /// on a separator predicate. The result does not contain empty `Normalized`
     /// values.
@@ -590,6 +595,18 @@ public enum AnsiText: Sendable,
     }
   }
   
+  /// Returns the total character count of the text, excluding formatting information.
+  public var terminalDisplayWidth: Int {
+    switch self {
+      case .plain(let str):
+        return str.terminalDisplayWidth
+      case .segmented(let segmented):
+        return segmented.reduce(0) { result, text in text.terminalDisplayWidth + result }
+      case .annotated(_, let text):
+        return text.terminalDisplayWidth
+    }
+  }
+  
   /// Returns the plain text content without any formatting information.
   ///
   /// This property provides the string representation suitable for contexts that don't support ANSI formatting.
@@ -671,6 +688,60 @@ public enum AnsiText: Sendable,
 
 extension Array<AnsiText.Normalized?> {
   
+  /// Justifies each line of text according to the specified alignment and width.
+  ///
+  /// This method takes an array where each non-nil element represents a line of text
+  /// and justifies it within a field of `maxWidth` characters. `nil` elements are
+  /// preserved in the output array to maintain line break positions.
+  ///
+  /// - Parameters:
+  ///   - maxWidth: The width in characters for each justified line.
+  ///   - align: The alignment to apply. Defaults to `.left`.
+  ///   - alignWidth: If true, use terminal width to align with vs. character count.
+  ///   - padCharacter: The character to use for padding. Defaults to a space. Needs to have
+  ///                   a width of 1.
+  ///   - fill: Optional text properties to apply to padding characters.
+  /// - Returns: An array of optionally justified normalized text values, preserving nil elements.
+  public func justified(maxWidth: Int,
+                        align: AnsiText.Alignment = .left,
+                        alignWidth: Bool = false,
+                        padCharacter: Character = " ",
+                        fill: TextProperties? = nil) -> [AnsiText.Normalized] {
+    return self.map { line in
+      guard let line, !line.isEmpty else {
+        return AnsiText.Normalized()
+      }
+      let lineCount = alignWidth ? line.terminalDisplayWidth : line.count
+      // If line is already at or exceeds maxWidth, return as-is
+      guard lineCount < maxWidth else {
+        return line
+      }
+      let paddingNeeded = maxWidth - lineCount
+      let pad = String(repeating: padCharacter, count: paddingNeeded)
+      var segments = line.segments
+      switch align {
+        case .left:
+          // Add padding to the right
+          if let fill {
+            segments.append((fill, pad))
+          }
+        case .right:
+          // Add padding to the left
+          segments.insert((fill ?? .empty, pad), at: 0)
+        case .center:
+          // Split padding between left and right
+          let leftPadding = paddingNeeded / 2
+          segments.insert((fill ?? .empty, String(repeating: padCharacter,
+                                                  count: leftPadding)), at: 0)
+          if let fill {
+            segments.append((fill, String(repeating: padCharacter,
+                                          count: paddingNeeded - leftPadding)))
+          }
+      }
+      return AnsiText.Normalized(segments: segments)
+    }
+  }
+  
   /// Joins the elements of this array with the given separator string and
   /// aligns the result in a field with `maxWidth` characters based on the
   /// `align` parameter. Use `padCharacter` to pad each line individually
@@ -690,6 +761,7 @@ extension Array<AnsiText.Normalized?> {
   public func joined(separator: String = " ",
                      maxWidth: Int,
                      align: AnsiText.Alignment = .left,
+                     alignWidth: Bool = false,
                      padCharacter: Character = " ",
                      fill: TextProperties? = nil) -> [AnsiText.Normalized] {
     let pad = "\(padCharacter)"
@@ -722,7 +794,7 @@ extension Array<AnsiText.Normalized?> {
     }
     for word in self {
       if let word {
-        let wordCount = word.count
+        let wordCount = alignWidth ? word.terminalDisplayWidth : word.count
         if currCount > 0 {
           if currCount + wordCount >= maxWidth {
             insert()
@@ -749,6 +821,30 @@ extension Array<AnsiText.Normalized?> {
 
 extension Array<AnsiText.Normalized> {
   
+  /// Justifies each line of text according to the specified alignment and width.
+  ///
+  /// This method takes an array where each non-nil element represents a line of text
+  /// and justifies it within a field of `maxWidth` characters. `nil` elements are
+  /// preserved in the output array to maintain line break positions.
+  ///
+  /// - Parameters:
+  ///   - maxWidth: The width in characters for each justified line.
+  ///   - align: The alignment to apply. Defaults to `.left`.
+  ///   - padCharacter: The character to use for padding. Defaults to a space.
+  ///   - fill: Optional text properties to apply to padding characters.
+  /// - Returns: An array of optionally justified normalized text values, preserving nil elements.
+  public func justified(maxWidth: Int,
+                        align: AnsiText.Alignment = .left,
+                        alignWidth: Bool = false,
+                        padCharacter: Character = " ",
+                        fill: TextProperties? = nil) -> [AnsiText.Normalized] {
+    return (self as [AnsiText.Normalized?]).justified(maxWidth: maxWidth,
+                                                      align: align,
+                                                      alignWidth: alignWidth,
+                                                      padCharacter: padCharacter,
+                                                      fill: fill)
+  }
+  
   /// Joins the elements of this array with the given separator string and
   /// aligns the result in a field with `maxWidth` characters based on the
   /// `align` parameter. Use `padCharacter` to pad each line individually
@@ -768,11 +864,13 @@ extension Array<AnsiText.Normalized> {
   public func joined(separator: String = " ",
                      maxWidth: Int,
                      align: AnsiText.Alignment = .left,
+                     alignWidth: Bool = false,
                      padCharacter: Character = " ",
                      fill: TextProperties? = nil) -> [AnsiText.Normalized] {
     return (self as [AnsiText.Normalized?]).joined(separator: separator,
                                                    maxWidth: maxWidth,
                                                    align: align,
+                                                   alignWidth: alignWidth,
                                                    padCharacter: padCharacter,
                                                    fill: fill)
   }
@@ -858,5 +956,14 @@ extension Array<AnsiText> {
       result.append(contentsOf: text.normalized.segments)
     }
     return AnsiText.Normalized(segments: result).text
+  }
+}
+
+extension String {
+  public var terminalDisplayWidth: Int {
+    self.unicodeScalars.reduce(0) {
+      let w = wcwidth(wchar_t(bitPattern: $1.value))
+      return $0 + (w > 0 ? Int(w) : 0)
+    }
   }
 }

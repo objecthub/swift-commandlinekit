@@ -299,5 +299,5 @@ if let ln = LineReader() {
 
 Author: Matthias Zenger (<matthias@objecthub.com>)  
 Copyright © 2018-2025 Google LLC.  
-Copyright © 2026 Matthias Zenger
+Copyright © 2026 Matthias Zenger  
 _Please note: This is not an official Google product._
