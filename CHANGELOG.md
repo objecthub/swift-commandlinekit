@@ -1,5 +1,8 @@
 # Changelog
 
+# 2.0 (2026-05-15)
+- TODO
+
 # 1.0 (2023-08-23)
 - Provide declarative API for defining command-line tools
 - Improve color-detection for terminals

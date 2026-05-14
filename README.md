@@ -2,17 +2,41 @@
 
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fobjecthub%2Fswift-commandlinekit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/objecthub/swift-commandlinekit) [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fobjecthub%2Fswift-commandlinekit%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/objecthub/swift-commandlinekit) [![IDE: Xcode 16](https://img.shields.io/badge/IDE-Xcode%2016-blue.svg?style=flat)](https://developer.apple.com/xcode/) [![Package managers: SwiftPM, Carthage](https://img.shields.io/badge/Package%20managers-SwiftPM,%20Carthage-green.svg?style=flat)](https://github.com/Carthage/Carthage) [![License: Apache](http://img.shields.io/badge/License-Apache-lightgrey.svg?style=flat)](https://raw.githubusercontent.com/objecthub/swift-numberkit/master/LICENSE)
 
-## Overview
-
 This is a library supporting the development of command-line tools in
-the programming language Swift on macOS. It also compiles under Linux.
+the programming language Swift on macOS. It also compiles on iOS and Linux.
 The library provides the following functionality:
 
    - Management of command-line arguments,
-   - Usage of escape sequences on terminals, and
+   - Usage of escape sequences on terminals, e.g. for formatting output on ANSI terminals, and
    - Reading strings on terminals using a lineread-inspired implementation
      based on the library [Linenoise-Swift](https://github.com/andybest/linenoise-swift),
      but supporting unicode input, multiple lines, and styled text.
+   - Reading strings on terminals in a secure way hiding user input, e.g. for entering
+     passwords, API keys, etc.
+
+<table width="100%">
+<tr><th colspan="2">Table of contents</th></tr>
+<tr>
+<td width="650px" valign="top">
+1. &nbsp;<a href="#command-line-arguments">Command-line arguments</a><br />
+&nbsp;&nbsp; 1.1 &nbsp;<a href="#basics">Basics</a><br />
+&nbsp;&nbsp; 1.2 &nbsp;<a href="#programmatic-api">Programmatic API</a><br />
+&nbsp;&nbsp; 1.3 &nbsp;<a href="#declarative-api">Declarative API</a><br />
+2. &nbsp;<a href="#styled-output">Styled output</a><br />
+&nbsp;&nbsp; 2.1 &nbsp;<a href="#text-style-and-colors">Text style and colors</a><br />
+&nbsp;&nbsp; 2.2 &nbsp;<a href="#styled-string-formatting">Styled string formatting</a><br />
+</td>
+<td width="50%" valign="top">
+3. &nbsp;<a href="#reading-strings">Reading strings</a><br />
+&nbsp;&nbsp; 3.1 &nbsp;<a href="#readline">Readline</a><br />
+&nbsp;&nbsp; 3.2 &nbsp;<a href="#secure-readline">Secure readline</a><br />
+4. &nbsp;<a href="#requirements">Requirements</a><br />
+5. &nbsp;<a href="#copyright">Copyright</a><br />
+</td>
+</tr>
+</table>
+
+&nbsp;
 
 ## Command-line arguments
 
@@ -216,12 +240,14 @@ succeeds or fails).
 }
 ```
 
-## Text style and colors
+## Styled output
+
+### Text style and colors
 
 CommandLineKit provides a
 [TextProperties](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/TextProperties.swift)
 structure for bundling a text color, a background color, and a text style in a single object. Text properties can be
-merged with the `with(:)` functions and applied to a string with the `apply(to:)` function.
+merged with the `with(:)` methods and applied to a string with the `apply(to:)` method.
 
 Individual enumerations for
 [TextColor](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/TextColor.swift),
@@ -229,7 +255,140 @@ Individual enumerations for
 [TextStyle](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/TextStyle.swift)
 define the individual properties.
 
+### Styled string formatting
+
+Using [TextProperties](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/TextProperties.swift)
+and its `apply(to:)` method can be used to inject ANSI escape sequences into strings so that they appear formatted on
+ANSI terminals. But using this approach directly makes it really difficult to format output, e.g. to center or right-align
+content. For this purpose, enum [AnsiText](https://github.com/objecthub/swift-commandlinekit/blob/master/Sources/CommandLineKit/AnsiText.swift) is provided. It bundles strings with `TextProperties`-based styling definitions.
+`AnsiText` can be initialized directly from strings and properties can be injected via string interpolation.
+
+`AnsiText` represents styled text as a tree structure with three cases:
+- **`plain(String)`**: Unstyled text
+- **`segmented([AnsiText])`**: Multiple concatenated text segments
+- **`annotated(TextProperties, AnsiText)`**: Text with styling applied
+
+```swift
+enum AnsiText: ... {
+  case plain(String)
+  case segmented([AnsiText])
+  indirect case annotated(TextProperties, AnsiText)
+  ...
+  struct Normalized: ... {
+    var segments: [(TextProperties, String)]
+    init(segments: [(TextProperties, String)]) { ... }
+    init(_ string: String = "", properties: TextProperties = .empty) { ... }
+    init(repeating: String, count: Int, properties: TextProperties = .empty) { ... }
+    ...
+  }
+  ...
+  // Normalized representation
+  var normalized: Normalized { ... }
+  // Returns the number of characters (ignoring formatting)
+  var count: Int { ... }
+  // Returns the width of the output in ANSI terminals
+  // (factoring in multi-place unicode characters)
+  var terminalDisplayWidth: Int { ... }
+}
+```
+
+Here are some basic usage examples:
+
+```swift
+// Create text using string literals
+let text: AnsiText = "Hello, World!"
+// Apply styling via string interpolation
+let styled: AnsiText = "Error: \("File not found", properties: .init(.red, nil, .bold))"
+// Compose complex styled text
+let message: AnsiText = .segmented([
+  .annotated(.init(.green), "Success: "),
+  .plain("Operation completed in "),
+  .annotated(.init(.blue, nil, .bold), "1.2s")
+])
+```
+
+#### AnsiText.Normalized
+
+While `AnsiText` provides a convenient tree-based representation, `AnsiText.Normalized` offers a flattened, optimized form that merges adjacent segments with identical properties. This makes it more efficient for rendering and text manipulation operations:
+
+```swift
+let text: AnsiText = "Hello \("World", properties: .init(.red))"
+let normalized = text.normalized
+// normalized segments: [(.empty, "Hello "), (.red, "World")]
+// Normalized provides direct access to segments
+for (properties, string) in normalized.segments {
+  print("\(string) with \(properties)")
+}
+// Normalized is a collection and bi-directional sequence
+// providing the same access to characters as strings (but with
+// text properties injected):
+for (properties, ch) in normalized {
+  print("`\(ch)` with \(properties)")
+}
+// Get plain text or encoded output
+print(normalized.description) // "Hello World"
+print(normalized.encodedString) // "Hello \u{001B}[31mWorld\u{001B}[0m"
+```
+
+Key differences between `AnsiText` and `AnsiText.Normalized`:
+- **Structure**: `AnsiText` is a hierarchical tree; `Normalized` is a flat array of segments
+- **Optimization**: `Normalized` merges adjacent segments with the same properties
+- **Performance**: `Normalized` is more efficient for rendering and manipulation
+- **Usage**: Use `AnsiText` for construction; convert to `Normalized` for processing
+
+#### Formatting functions
+
+Arrays of `AnsiText`, `AnsiText?`, `AnsiText.Normalized`, and `AnsiText.Normalized?` values support
+powerful formatting functions for aligning and wrapping text:
+
+**`justified(maxWidth:align:alignWidth,padCharacter:fill:)`** interprets the array as an array of lines each
+represented by one `AnsiText` or `AnsiText.Normalized` value and aligns individual lines to a
+specified width. It is using the character count by default to do the alignment. If
+`alignWidth` is set to true, the alignment is done by using `terminalDisplayWidth` which factors
+in that some unicode characters (e.g. emojis) require multiple places when output in ANSI terminals.
+
+```swift
+let lines: [AnsiText] = [
+  "Short line",
+  "A \("longer red", properties: .red) line",
+  .annotated(.italic, "And \("short", properties: .underline) again")
+]
+// Normalize the lines first
+let normalizedLines = lines.map { $0.normalized }
+// Left-align with padding
+let left = normalizedLines.justified(maxWidth: 20, align: .left)
+// Center-align with custom padding
+let centered = normalizedLines.justified(maxWidth: 20, align: .center, padCharacter: ".", fill: TextProperties(.grey))
+// Right-align factoring in the display width
+let right = normalizedLines.justified(maxWidth: 20, align: .right, alignWidth: true)
+```
+
+**`joined(separator:maxWidth:align:alignWidth:padCharacter:fill)`** interprets the array as an array
+of words each represented by an `AnsiText` or `AnsiText.Normalized` value and combines words with
+word wrapping and alignment:
+
+```swift
+// Styled text
+let text: AnsiText = "The quick \("brown fox", properties: .bold) jumps over the lazy dog"
+// Tokenize styled text
+let words = text.normalized.tokenize()
+// Word-wrap to 15 characters with right alignment
+let wrapped = words.joined(separator: " ", maxWidth: 15, align: .right)
+// Join the lines and include the ANSI control sequences
+let all = wrapped.joined(separator: "\n").encodedString
+print(all)
+// Output (centered in 15-char field):
+//   "The quick brown"
+//   " fox jumps over"
+//   "   the lazy dog"
+```
+
+These formatting functions enable sophisticated terminal output, such as creating aligned tables with
+styled cells, wrapped paragraphs, and justified text blocks while preserving all ANSI styling information.
+
 ## Reading strings
+
+### Readline
 
 CommandLineKit includes a significantly improved version of the "readline" API originally defined by the library
 [Linenoise-Swift](https://github.com/andybest/linenoise-swift). It supports unicode text, multi-line text entry, and
@@ -287,6 +446,10 @@ if let ln = LineReader() {
   }
 }
 ```
+
+### Secure readline
+
+
 
 ## Requirements
 
