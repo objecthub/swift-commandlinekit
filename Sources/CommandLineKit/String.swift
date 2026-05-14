@@ -68,7 +68,7 @@ extension String {
       return 0
     }
     // Check for wide character ranges (double-width)
-    if isWideCharacter(value) {
+    if Terminal.isWideCharacter(value) {
       return 2
     }
     return 1
@@ -88,45 +88,5 @@ extension String {
       // Variation selectors
       (value >= 0xFE20 && value <= 0xFE2F)
     )
-  }
-  
-  private func isWideCharacter(_ value: UInt32) -> Bool {
-    switch value {
-      // CJK Unified Ideographs and common extensions
-      case
-        0x1100...0x115F,  // Hangul Jamo
-        0x2600...0x26FF,  // Miscellaneous Symbols (☀︎, ❤︎, etc.)
-        0x2700...0x27BF,  // Dingbats (✅, ✈, ✉, etc.)
-        0x2E80...0x303E,  // CJK Radicals, Kangxi, etc.
-        0x3041...0x33BF,  // Hiragana, Katakana, Bopomofo, Hangul Compat, Kanbun, etc.
-        0x33FF...0x33FF,  // CJK Compatibility
-        0x3400...0x4DBF,  // CJK Extension A
-        0x4E00...0x9FFF,  // CJK Unified Ideographs
-        0xA000...0xA4CF,  // Yi
-        0xA960...0xA97F,  // Hangul Jamo Extended-A
-        0xAC00...0xD7FF,  // Hangul Syllables and Jamo Extended-B
-        0xF900...0xFAFF,  // CJK Compatibility Ideographs
-        0xFE10...0xFE1F,  // Vertical Forms
-        0xFE30...0xFE6F,  // CJK Compatibility Forms, Small Form Variants
-        0xFF01...0xFF60,  // Fullwidth ASCII and punctuation
-        0xFFE0...0xFFE6,  // Fullwidth signs
-                          // Supplementary wide blocks
-        0x1B000...0x1B12F, // Kana Supplement/Extended
-        0x1F004...0x1F004, // Mahjong tile
-        0x1F0CF...0x1F0CF, // Playing card
-        0x1F200...0x1F251, // Enclosed CJK
-        0x1F300...0x1F6FF, // Misc symbols, emoticons, transport
-        0x1F900...0x1F9FF, // Supplemental symbols
-        0x1FA00...0x1FA6F, // Chess symbols
-        0x1FA70...0x1FAFF, // Symbols and pictographs extended-A
-        0x20000...0x2A6DF, // CJK Extension B
-        0x2A700...0x2CEAF, // CJK Extensions C, D, E
-        0x2CEB0...0x2EBEF, // CJK Extension F
-        0x2F800...0x2FA1F, // CJK Compatibility Supplement
-        0x30000...0x3134F: // CJK Extension G
-        return true
-      default:
-        return false
-    }
   }
 }

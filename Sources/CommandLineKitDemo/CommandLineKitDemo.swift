@@ -36,7 +36,7 @@ import CommandLineKit
 
 @main struct CommandLineKitDemo {
   static func main() {
-    if CommandLine.arguments.isEmpty {
+    if CommandLine.arguments.count < 2 {
       CommandLineKitDemo.demo()
     } else {
       CommandLineKitDemo.richText()
@@ -66,9 +66,7 @@ import CommandLineKit
     ]
     let combined = text.joined(separator: " ")
     let tokenized: [AnsiText.Normalized?] = combined.normalized.tokenize()
-    let formatted = tokenized.joined(separator: " ",
-                                     maxWidth: 45,
-                                     align: .left)
+    let formatted = tokenized.joined(separator: " ", maxWidth: 45, align: .left)
     for line in formatted {
       print(line.encodedString)
     }
@@ -82,6 +80,13 @@ import CommandLineKit
       print("Terminal size: \(size.lines) lines, \(size.columns) columns")
     } else {
       print("Could not detect terminal size")
+    }
+    if let secret = try? Terminal.readLineSecure(prompt: .annotated(.bold, "Enter a secret: "),
+                                                 maxLength: 8,
+                                                 allowEmpty: false) {
+      print(TextProperties(textStyles: [.dim, .italic]).apply(to: "Secret = \(secret)"))
+    } else {
+      print(TextProperties(textStyles: [.dim, .italic]).apply(to: "CTRL+C pressed"))
     }
     if let ln = LineReader() {
       ln.setCompletionCallback { currentBuffer in

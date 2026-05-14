@@ -38,6 +38,286 @@ import Foundation
 
 public struct Terminal {
   
+  /// Read a line securely in an ANSI terminal, i.e. without displaying what was
+  /// entered. This will conceal all input with `replacementChar`. This method works
+  /// also for unicode characters.
+  public static func readLineSecure(prompt: AnsiText = "",
+                                    maxLength: Int? = nil,
+                                    allowEmpty: Bool = true,
+                                    replacementChar: Character = "•") throws -> String {
+    return try Terminal.readLineSecure(prompt: prompt.encodedString,
+                                       maxLength: maxLength,
+                                       allowEmpty: allowEmpty,
+                                       replacementChar: replacementChar)
+  }
+  
+  /// Read a line securely in an ANSI terminal, i.e. without displaying what was
+  /// entered. This will conceal all input with `replacementChar`. This method works
+  /// also for unicode characters.
+  public static func readLineSecure(prompt: String = "",
+                                    maxLength: Int? = nil,
+                                    allowEmpty: Bool = true,
+                                    replacementChar: Character = "•") throws -> String {
+    print(prompt, terminator: "")
+    fflush(stdout)
+    var originalTermios = termios()
+    tcgetattr(STDIN_FILENO, &originalTermios)
+    var rawTermios = originalTermios
+    rawTermios.c_lflag &= ~tcflag_t(ECHO | ICANON | ISIG)
+    rawTermios.c_cc.16 = 1  // VMIN
+    rawTermios.c_cc.17 = 0  // VTIME
+    tcsetattr(STDIN_FILENO, TCSANOW, &rawTermios)
+    defer {
+      tcsetattr(STDIN_FILENO, TCSANOW, &originalTermios)
+      print()
+    }
+    
+    // Returns how many bytes a UTF-8 sequence has from its leading byte.
+    func utf8SequenceLength(_ byte: UInt8) -> Int {
+      switch byte {
+        case 0x00...0x7F: return 1   // 0xxxxxxx  ASCII
+        case 0xC0...0xDF: return 2   // 110xxxxx
+        case 0xE0...0xEF: return 3   // 1110xxxx
+        case 0xF0...0xF7: return 4   // 11110xxx
+        default:          return 0   // Continuation byte or invalid
+      }
+    }
+    
+    // Reads one complete UTF-8 scalar from stdin. Returns nil on EOF/error.
+    func readUnicodeScalar() -> (scalar: Unicode.Scalar, bytes: [UInt8])? {
+      var firstByte: UInt8 = 0
+      guard read(STDIN_FILENO, &firstByte, 1) == 1 else {
+        return nil
+      }
+      let length = utf8SequenceLength(firstByte)
+      guard length > 0 else { // skip invalid leading bytes
+        return nil
+      }
+      var bytes: [UInt8] = [firstByte]
+      // Read remaining continuation bytes
+      for _ in 1..<length {
+        var contByte: UInt8 = 0
+        guard read(STDIN_FILENO, &contByte, 1) == 1 else { return nil }
+          // Continuation bytes must be 10xxxxxx
+        guard (contByte & 0xC0) == 0x80 else { return nil }
+        bytes.append(contByte)
+      }
+      // Decode to a Unicode scalar
+      guard let str = String(bytes: bytes, encoding: .utf8),
+            let scalar = str.unicodeScalars.first else {
+        return nil
+      }
+      return (scalar, bytes)
+    }
+    
+    // Number of terminal columns a scalar occupies (0, 1, or 2).
+    func terminalWidth(of scalar: Unicode.Scalar) -> Int {
+      let v = scalar.value
+      // Zero-width: combining marks, variation selectors, zero-width spaces, etc.
+      if v == 0 {
+        return 0
+      }
+      if v < 32 || (v >= 0x7F && v < 0xA0) { // C0/C1 control chars
+        return 0                             // Full-width / wide characters (East Asian wide)
+      }
+      if Terminal.isWideCharacter(v) {
+        return 2
+      } else {
+        return 1
+      }
+    }
+    
+    // Reads after ESC. Returns a tag indicating what was found.
+    enum EscapeResult {
+      case arrowLeft
+      case arrowRight
+      case arrowUp
+      case arrowDown
+      case unknown
+    }
+    
+    // Reads an ANSI escape sequence after ESC has already been consumed.
+    // Returns the final byte (e.g. 'A'/'B'/'C'/'D' for arrow keys), or nil for unknown.
+    func readEscapeSequence() -> EscapeResult {
+      var byte: UInt8 = 0
+      guard read(STDIN_FILENO, &byte, 1) == 1 else {
+        return .unknown
+      }
+      switch byte {
+        case UInt8(ascii: "["):
+          // CSI sequence — read the final byte
+          guard read(STDIN_FILENO, &byte, 1) == 1 else { return .unknown }
+          // Drain extended sequences e.g. ESC [ 1 ~
+          if byte >= UInt8(ascii: "0") && byte <= UInt8(ascii: "9") {
+            var extra: UInt8 = 0
+            _ = read(STDIN_FILENO, &extra, 1)
+            return .unknown
+          }
+          switch byte {
+            case UInt8(ascii: "A"):
+              return .arrowUp
+            case UInt8(ascii: "B"):
+              return .arrowDown
+            case UInt8(ascii: "C"):
+              return .arrowRight
+            case UInt8(ascii: "D"):
+              return .arrowLeft
+            default:
+              return .unknown
+          }
+        default:
+          return .unknown
+      }
+    }
+
+    // Move terminal cursor left by `n` columns.
+    func cursorLeft(_ n: Int) {
+      guard n > 0 else { return }
+      print("\u{1B}[\(n)D", terminator: "")
+      fflush(stdout)
+    }
+
+    // Move terminal cursor right by `n` columns.
+    func cursorRight(_ n: Int) {
+      guard n > 0 else { return }
+      print("\u{1B}[\(n)C", terminator: "")
+      fflush(stdout)
+    }
+
+    // Redraws all '*' from `cursorIndex` to end, then repositions cursor.
+    // Called after any insertion or deletion in the middle of the string.
+    func redrawFromCursor(clusterWidths: [Int], cursorIndex: Int, eraseTrailing: Bool = false) {
+      // On insert: suffix grew by 1, print suffixCount+1 stars, move back suffixCount
+      // On delete: suffix shrank by 1, print suffixCount stars + 1 space, move back suffixCount+1
+      let suffixCount = clusterWidths.count - cursorIndex
+      if eraseTrailing {
+        // Deletion: overwrite old stars with new (fewer) stars, blank the last one
+        print(String(repeating: replacementChar, count: suffixCount), terminator: "")
+        print(" ", terminator: "")
+        fflush(stdout)
+        cursorLeft(suffixCount + 1)
+      } else {
+        // Insertion: overwrite old stars and add one new one at the end
+        print(String(repeating: replacementChar, count: suffixCount + 1), terminator: "")
+        fflush(stdout)
+        cursorLeft(suffixCount)
+      }
+    }
+    
+    // Each element corresponds to one grapheme cluster (character typed by user).
+    var clusterBytes:  [[UInt8]] = []   // raw UTF-8 bytes per cluster
+    var clusterWidths: [Int]     = []   // terminal column width per cluster
+    var cursorIndex: Int = 0            // insertion point (0 = before first char)
+    
+    while true {
+      guard let (scalar, bytes) = readUnicodeScalar() else {
+        break
+      }
+      switch scalar.value {
+        // Enter/Return
+        case 10, 13:
+          if !allowEmpty && clusterBytes.isEmpty {
+            print("\u{07}", terminator: "")  // BEL — signal that empty is not allowed
+            fflush(stdout)
+            continue
+          }
+        // Ctrl+A — jump to beginning
+        case 0x01:
+          if cursorIndex > 0 {
+            let cols = clusterWidths[..<cursorIndex].reduce(0, +)
+            cursorLeft(cols)
+            cursorIndex = 0
+          }
+          continue
+        // Ctrl+E — jump to end
+        case 0x05:
+          if cursorIndex < clusterWidths.count {
+            let cols = clusterWidths[cursorIndex...].reduce(0, +)
+            cursorRight(cols)
+            cursorIndex = clusterWidths.count
+          }
+          continue
+        // ESC — start of arrow-key sequence
+        case 0x1B:
+          switch readEscapeSequence() {
+            case .arrowLeft:
+              if cursorIndex > 0 {
+                cursorIndex -= 1
+                cursorLeft(clusterWidths[cursorIndex])
+              }
+            case .arrowRight:
+              if cursorIndex < clusterWidths.count {
+                cursorRight(clusterWidths[cursorIndex])
+                cursorIndex += 1
+              }
+            case .arrowUp, .arrowDown:
+              print("\u{07}", terminator: "") // BEL
+              fflush(stdout)
+              break
+            case .unknown:
+              break
+          }
+          continue
+        // Backspace/DEL — delete character before cursor
+        case 127, 8:
+          guard cursorIndex > 0 else {
+            continue
+          }
+          cursorIndex -= 1
+          let w = clusterWidths[cursorIndex]
+          clusterBytes.remove(at: cursorIndex)
+          clusterWidths.remove(at: cursorIndex)
+          cursorLeft(w)
+          redrawFromCursor(clusterWidths: clusterWidths, cursorIndex: cursorIndex, eraseTrailing: true)
+          continue
+        // Ctrl+C
+        case 3:
+          tcsetattr(STDIN_FILENO, TCSANOW, &originalTermios)
+          throw LineReaderError.CTRLC
+        // Ctrl+U — clear entire line
+        case 21:
+          // Move cursor to start of input, erase all stars
+          let colsToStart = clusterWidths[..<cursorIndex].reduce(0, +)
+          cursorLeft(colsToStart)
+          let totalStars = clusterWidths.count
+          print(String(repeating: " ", count: totalStars), terminator: "")
+          cursorLeft(totalStars)
+          clusterBytes.removeAll()
+          clusterWidths.removeAll()
+          cursorIndex = 0
+          fflush(stdout)
+          continue
+        // Printable character
+        default:
+          let w = terminalWidth(of: scalar)
+          if w == 0 {             // skip zero-width / control scalars
+            continue              // Accumulate bytes until we have a full grapheme cluster.
+          }                       // For password input a single scalar per cluster is fine.
+                                  // Enforce maxLength if specified
+          if let max = maxLength, clusterWidths.count >= max {
+            print("\u{07}", terminator: "")  // BEL
+            fflush(stdout)
+            continue
+          }
+          // Insert at cursorIndex
+          clusterBytes.insert(bytes, at: cursorIndex)
+          clusterWidths.insert(w, at: cursorIndex)
+          cursorIndex += 1
+          if cursorIndex == clusterWidths.count {
+            // Cursor is at the end — simple append, no redraw needed
+            print("\(replacementChar)", terminator: "")
+            fflush(stdout)
+          } else {
+            // Cursor is in the middle — redraw stars from insertion point
+            redrawFromCursor(clusterWidths: clusterWidths, cursorIndex: cursorIndex, eraseTrailing: false)
+          }
+          continue
+      }
+      break
+    }
+    return String(bytes: clusterBytes.flatMap { $0 }, encoding: .utf8) ?? ""
+  }
+  
   /// Returns the current size of the terminal in terms of a tuple whose
   /// first component refers to the number of lines, and whose second
   /// component refers to the number of columns.
@@ -146,5 +426,45 @@ public struct Terminal {
       }
     }
     return UInt8(closestIdx)
+  }
+  
+  internal static func isWideCharacter(_ value: UInt32) -> Bool {
+    switch value {
+      // CJK Unified Ideographs and common extensions
+      case
+        0x1100...0x115F,  // Hangul Jamo
+        0x2600...0x26FF,  // Miscellaneous Symbols (☀︎, ❤︎, etc.)
+        0x2700...0x27BF,  // Dingbats (✅, ✈, ✉, etc.)
+        0x2E80...0x303E,  // CJK Radicals, Kangxi, etc.
+        0x3041...0x33BF,  // Hiragana, Katakana, Bopomofo, Hangul Compat, Kanbun, etc.
+        0x33FF...0x33FF,  // CJK Compatibility
+        0x3400...0x4DBF,  // CJK Extension A
+        0x4E00...0x9FFF,  // CJK Unified Ideographs
+        0xA000...0xA4CF,  // Yi
+        0xA960...0xA97F,  // Hangul Jamo Extended-A
+        0xAC00...0xD7FF,  // Hangul Syllables and Jamo Extended-B
+        0xF900...0xFAFF,  // CJK Compatibility Ideographs
+        0xFE10...0xFE1F,  // Vertical Forms
+        0xFE30...0xFE6F,  // CJK Compatibility Forms, Small Form Variants
+        0xFF01...0xFF60,  // Fullwidth ASCII and punctuation
+        0xFFE0...0xFFE6,  // Fullwidth signs
+                          // Supplementary wide blocks
+        0x1B000...0x1B12F, // Kana Supplement/Extended
+        0x1F004...0x1F004, // Mahjong tile
+        0x1F0CF...0x1F0CF, // Playing card
+        0x1F200...0x1F251, // Enclosed CJK
+        0x1F300...0x1F6FF, // Misc symbols, emoticons, transport
+        0x1F900...0x1F9FF, // Supplemental symbols
+        0x1FA00...0x1FA6F, // Chess symbols
+        0x1FA70...0x1FAFF, // Symbols and pictographs extended-A
+        0x20000...0x2A6DF, // CJK Extension B
+        0x2A700...0x2CEAF, // CJK Extensions C, D, E
+        0x2CEB0...0x2EBEF, // CJK Extension F
+        0x2F800...0x2FA1F, // CJK Compatibility Supplement
+        0x30000...0x3134F: // CJK Extension G
+        return true
+      default:
+        return false
+    }
   }
 }
