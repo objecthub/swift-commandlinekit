@@ -18,6 +18,7 @@
 		CC74D37C2AEB0EDD0054CC5A /* CommandLineKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CC8649892FB0700C00DEB33E /* AnsiText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8649882FB0700700DEB33E /* AnsiText.swift */; };
 		CC86498C2FB127E900DEB33E /* AnsiTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */; };
+		CCA2A4C82FB653E100A8B92E /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA2A4C72FB653DE00A8B92E /* String.swift */; };
 		CCFC2AD7207A636B00EDDADD /* CommandLineKit.h in Headers */ = {isa = PBXBuildFile; fileRef = CCFC2AD5207A636B00EDDADD /* CommandLineKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CCFC2AE1207A640700EDDADD /* Flag.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE0207A640700EDDADD /* Flag.swift */; };
 		CCFC2AE3207A662F00EDDADD /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE2207A662F00EDDADD /* Flags.swift */; };
@@ -90,6 +91,7 @@
 		CC7CCB8D2FA6AA0800C05C77 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CC8649882FB0700700DEB33E /* AnsiText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiText.swift; sourceTree = "<group>"; };
 		CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiTextTests.swift; sourceTree = "<group>"; };
+		CCA2A4C72FB653DE00A8B92E /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CommandLineKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCFC2AD5207A636B00EDDADD /* CommandLineKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CommandLineKit.h; sourceTree = "<group>"; };
 		CCFC2AD6207A636B00EDDADD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				CC2324872087D9E4007D582B /* TextStyle.swift */,
 				CC2324892087DA70007D582B /* BackgroundColor.swift */,
 				CC8649882FB0700700DEB33E /* AnsiText.swift */,
+				CCA2A4C72FB653DE00A8B92E /* String.swift */,
 				CCFC2AFB207A6ACA00EDDADD /* LineReader.swift */,
 				CCFC2AFD207A6AF100EDDADD /* LineReaderError.swift */,
 				CCFC2B01207A6B2C00EDDADD /* LineReaderHistory.swift */,
@@ -305,7 +308,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2650;
 				ORGANIZATIONNAME = "Matthias Zenger";
 				TargetAttributes = {
 					CC74D3702AEB0E980054CC5A = {
@@ -371,6 +374,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CCA2A4C82FB653E100A8B92E /* String.swift in Sources */,
 				CC2324882087D9E4007D582B /* TextStyle.swift in Sources */,
 				CCFC2AE1207A640700EDDADD /* Flag.swift in Sources */,
 				CCFC2B04207A6B4100EDDADD /* EditState.swift in Sources */,

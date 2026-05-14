@@ -993,6 +993,151 @@ class AnsiTextTests: XCTestCase {
     XCTAssertEqual(normalizedIteratorCount, propertyCount)
   }
   
+  // MARK: - Terminal Display Width Tests
+  
+  func testTerminalDisplayWidthASCII() {
+    // Basic ASCII characters should have width of 1 each
+    XCTAssertEqual("Hello".terminalDisplayWidth, 5)
+    XCTAssertEqual("World".terminalDisplayWidth, 5)
+    XCTAssertEqual("123".terminalDisplayWidth, 3)
+    XCTAssertEqual("!@#$%".terminalDisplayWidth, 5)
+  }
+  
+  func testTerminalDisplayWidthEmpty() {
+    XCTAssertEqual("".terminalDisplayWidth, 0)
+  }
+  
+  func testTerminalDisplayWidthWhitespace() {
+    XCTAssertEqual(" ".terminalDisplayWidth, 1)
+    XCTAssertEqual("   ".terminalDisplayWidth, 3)
+    XCTAssertEqual("\t".terminalDisplayWidth, 0) // Tab is typically control character with width 0
+    XCTAssertEqual("Hello World".terminalDisplayWidth, 11)
+  }
+  
+  func testTerminalDisplayWidthFullWidthCharacters() {
+    // Full-width characters (common in CJK languages) should have width of 2
+    XCTAssertEqual("你好".terminalDisplayWidth, 4) // Two Chinese characters
+    XCTAssertEqual("こんにちは".terminalDisplayWidth, 10) // Five Japanese hiragana characters
+    XCTAssertEqual("안녕".terminalDisplayWidth, 4) // Two Korean characters
+    XCTAssertEqual("全角".terminalDisplayWidth, 4) // Two full-width characters
+  }
+  
+  func testTerminalDisplayWidthMixedWidthCharacters() {
+    // Mix of ASCII and full-width characters
+    XCTAssertEqual("Hello你好".terminalDisplayWidth, 9) // 5 (Hello) + 4 (你好)
+    XCTAssertEqual("Test世界".terminalDisplayWidth, 8) // 4 (Test) + 4 (世界)
+    XCTAssertEqual("A日B本C".terminalDisplayWidth, 7) // 1+2+1+2+1
+  }
+  
+  func testTerminalDisplayWidthEmoji() {
+    // Emoji characters typically have width of 2
+    XCTAssertEqual("😀".terminalDisplayWidth, 2)
+    XCTAssertEqual("🎉".terminalDisplayWidth, 2)
+    XCTAssertEqual("❤️".terminalDisplayWidth, 2)
+    XCTAssertEqual("Hello😀World".terminalDisplayWidth, 12) // 5 + 2 + 5
+  }
+  
+  func testTerminalDisplayWidthCombiningCharacters() {
+    // Combining characters (like accents) typically have width of 0
+    XCTAssertEqual("é".terminalDisplayWidth, 1) // e + combining acute accent
+    XCTAssertEqual("café".terminalDisplayWidth, 4)
+  }
+  
+  func testTerminalDisplayWidthZeroWidthCharacters() {
+    // Zero-width characters should contribute 0 to width
+    let zeroWidthSpace = "\u{200B}" // Zero-width space
+    XCTAssertEqual(zeroWidthSpace.terminalDisplayWidth, 0)
+    XCTAssertEqual("Hello\u{200B}World".terminalDisplayWidth, 10)
+  }
+  
+  func testTerminalDisplayWidthNewlines() {
+    // Newlines and control characters typically have width of 0
+    XCTAssertEqual("\n".terminalDisplayWidth, 0)
+    XCTAssertEqual("Hello\nWorld".terminalDisplayWidth, 10)
+    XCTAssertEqual("\r\n".terminalDisplayWidth, 0)
+  }
+  
+  func testTerminalDisplayWidthComplexString() {
+    // Test a complex string with multiple types of characters
+    let complex = "Test 测试 😀 123"
+    // Test (4) + space (1) + 测试 (4) + space (1) + 😀 (2) + space (1) + 123 (3) = 16
+    XCTAssertEqual(complex.terminalDisplayWidth, 16)
+  }
+  
+  func testTerminalDisplayWidthAnsiTextNormalized() {
+    // Test that terminalDisplayWidth works on AnsiText.Normalized
+    let text = AnsiText.plain("Hello世界").normalized
+    XCTAssertEqual(text.terminalDisplayWidth, 9) // 5 (Hello) + 4 (世界)
+  }
+  
+  func testTerminalDisplayWidthAnsiText() {
+    // Test that terminalDisplayWidth works on AnsiText
+    let text: AnsiText = "Test你好"
+    XCTAssertEqual(text.terminalDisplayWidth, 8) // 4 (Test) + 4 (你好)
+  }
+  
+  func testTerminalDisplayWidthWithProperties() {
+    // Test that properties don't affect terminal display width
+    let props = TextProperties(.red, .yellow, .bold)
+    let text = AnsiText.annotated(props, "Hello世界")
+    XCTAssertEqual(text.terminalDisplayWidth, 9) // 5 (Hello) + 4 (世界)
+    XCTAssertEqual(text.normalized.terminalDisplayWidth, 9)
+  }
+  
+  func testTerminalDisplayWidthVsCount() {
+    // Verify that terminalDisplayWidth differs from count for wide characters
+    let str = "你好"
+    XCTAssertEqual(str.count, 2) // 2 characters
+    XCTAssertEqual(str.terminalDisplayWidth, 4) // but 4 display columns
+    
+    let mixed = "A日B"
+    XCTAssertEqual(mixed.count, 3) // 3 characters
+    XCTAssertEqual(mixed.terminalDisplayWidth, 4) // but 4 display columns (1+2+1)
+  }
+  
+  func testTerminalDisplayWidthSegmented() {
+    // Test with segmented AnsiText
+    let text = AnsiText.segmented([
+      .plain("Hello"),
+      .plain("世界"),
+      .plain("Test")
+    ])
+    XCTAssertEqual(text.terminalDisplayWidth, 13) // 5 + 4 + 4
+  }
+  
+  func testTerminalDisplayWidthJustifiedAlignment() {
+    // Test that justified method can use terminalDisplayWidth
+    let lines: [AnsiText.Normalized?] = [
+      AnsiText.plain("你好").normalized // Width 4, not count 2
+    ]
+    let justified = lines.justified(maxWidth: 10, align: .left, alignWidth: true, fill: .empty)
+    XCTAssertEqual(justified.count, 1)
+    // With alignWidth: true, should pad to reach width 10 (4 + 6 spaces)
+    XCTAssertEqual(justified[0].terminalDisplayWidth, 10)
+  }
+  
+  func testTerminalDisplayWidthFullWidthKatakana() {
+    // Full-width katakana characters
+    XCTAssertEqual("カタカナ".terminalDisplayWidth, 8) // 4 characters, 2 width each
+    XCTAssertEqual("アイウエオ".terminalDisplayWidth, 10) // 5 characters, 2 width each
+  }
+  
+  func testTerminalDisplayWidthHalfWidthKatakana() {
+    // Half-width katakana (if supported)
+    let halfWidth = "ｶﾀｶﾅ" // Half-width katakana
+    // Half-width katakana should have width of 1 each
+    XCTAssertEqual(halfWidth.terminalDisplayWidth, 4)
+  }
+  
+  func testTerminalDisplayWidthNumbers() {
+    // Full-width numbers vs. ASCII numbers
+    let asciiNumbers = "123"
+    XCTAssertEqual(asciiNumbers.terminalDisplayWidth, 3)
+    
+    let fullWidthNumbers = "１２３" // Full-width
+    XCTAssertEqual(fullWidthNumbers.terminalDisplayWidth, 6)
+  }
+  
   static let allTests = [
     // Basic Construction
     ("testPlainTextCreation", testPlainTextCreation),
@@ -1108,5 +1253,26 @@ class AnsiTextTests: XCTestCase {
     ("testNormalizedIteratorCount", testNormalizedIteratorCount),
     ("testNormalizedIteratorComplexProperties", testNormalizedIteratorComplexProperties),
     ("testIteratorCountMatchesProperty", testIteratorCountMatchesProperty),
+    
+    // Terminal Display Width Tests
+    ("testTerminalDisplayWidthASCII", testTerminalDisplayWidthASCII),
+    ("testTerminalDisplayWidthEmpty", testTerminalDisplayWidthEmpty),
+    ("testTerminalDisplayWidthWhitespace", testTerminalDisplayWidthWhitespace),
+    ("testTerminalDisplayWidthFullWidthCharacters", testTerminalDisplayWidthFullWidthCharacters),
+    ("testTerminalDisplayWidthMixedWidthCharacters", testTerminalDisplayWidthMixedWidthCharacters),
+    ("testTerminalDisplayWidthEmoji", testTerminalDisplayWidthEmoji),
+    ("testTerminalDisplayWidthCombiningCharacters", testTerminalDisplayWidthCombiningCharacters),
+    ("testTerminalDisplayWidthZeroWidthCharacters", testTerminalDisplayWidthZeroWidthCharacters),
+    ("testTerminalDisplayWidthNewlines", testTerminalDisplayWidthNewlines),
+    ("testTerminalDisplayWidthComplexString", testTerminalDisplayWidthComplexString),
+    ("testTerminalDisplayWidthAnsiTextNormalized", testTerminalDisplayWidthAnsiTextNormalized),
+    ("testTerminalDisplayWidthAnsiText", testTerminalDisplayWidthAnsiText),
+    ("testTerminalDisplayWidthWithProperties", testTerminalDisplayWidthWithProperties),
+    ("testTerminalDisplayWidthVsCount", testTerminalDisplayWidthVsCount),
+    ("testTerminalDisplayWidthSegmented", testTerminalDisplayWidthSegmented),
+    ("testTerminalDisplayWidthJustifiedAlignment", testTerminalDisplayWidthJustifiedAlignment),
+    ("testTerminalDisplayWidthFullWidthKatakana", testTerminalDisplayWidthFullWidthKatakana),
+    ("testTerminalDisplayWidthHalfWidthKatakana", testTerminalDisplayWidthHalfWidthKatakana),
+    ("testTerminalDisplayWidthNumbers", testTerminalDisplayWidthNumbers),
   ]
 }

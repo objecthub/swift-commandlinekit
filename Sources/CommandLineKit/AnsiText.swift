@@ -958,12 +958,3 @@ extension Array<AnsiText> {
     return AnsiText.Normalized(segments: result).text
   }
 }
-
-extension String {
-  public var terminalDisplayWidth: Int {
-    self.unicodeScalars.reduce(0) {
-      let w = wcwidth(wchar_t(bitPattern: $1.value))
-      return $0 + (w > 0 ? Int(w) : 0)
-    }
-  }
-}
