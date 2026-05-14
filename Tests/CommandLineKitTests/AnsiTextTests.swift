@@ -1031,6 +1031,7 @@ class AnsiTextTests: XCTestCase {
   
   func testTerminalDisplayWidthEmoji() {
     // Emoji characters typically have width of 2
+    XCTAssertEqual("✅".terminalDisplayWidth, 2)
     XCTAssertEqual("😀".terminalDisplayWidth, 2)
     XCTAssertEqual("🎉".terminalDisplayWidth, 2)
     XCTAssertEqual("❤️".terminalDisplayWidth, 2)

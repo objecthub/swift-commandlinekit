@@ -51,6 +51,13 @@ extension String {
     if value == 0xFEFF { // Zero-width no-break space / BOM
       return 0
     }
+    // Variation selectors (emoji/text presentation modifiers, always zero-width)
+    if (value >= 0xFE00 && value <= 0xFE0F) { // Variation Selectors 1–16
+      return 0
+    }
+    if (value >= 0xE0100 && value <= 0xE01EF) { // Variation Selectors Supplement
+      return 0
+    }
     // Skip combining characters (they modify the previous character)
     let ch = Character(scalar)
     if ch.unicodeScalars.allSatisfy({ isCombining($0) }) {
@@ -88,6 +95,8 @@ extension String {
       // CJK Unified Ideographs and common extensions
       case
         0x1100...0x115F,  // Hangul Jamo
+        0x2600...0x26FF,  // Miscellaneous Symbols (☀︎, ❤︎, etc.)
+        0x2700...0x27BF,  // Dingbats (✅, ✈, ✉, etc.)
         0x2E80...0x303E,  // CJK Radicals, Kangxi, etc.
         0x3041...0x33BF,  // Hiragana, Katakana, Bopomofo, Hangul Compat, Kanbun, etc.
         0x33FF...0x33FF,  // CJK Compatibility
