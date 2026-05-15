@@ -449,7 +449,33 @@ if let ln = LineReader() {
 
 ### Secure readline
 
+The `Terminal.readLineSecure(prompt:maxLength:allowEmpty:replacementChar)` method provides a secure way to read sensitive input from the terminal, such as passwords, API keys, or other confidential data. Unlike regular input, this function conceals user input by replacing each character with a replacement character (by default `•`).
 
+Key features:
+- **Unicode support**: Correctly handles multi-byte UTF-8 characters and wide characters (e.g., emojis, CJK characters)
+- **Cursor movement**: Supports left/right arrow keys and Ctrl+A/Ctrl+E for navigation
+- **Editing capabilities**: Allows backspace/delete to remove characters and Ctrl+U to clear the entire line
+- **Length constraints**: Optional maximum length enforcement with visual/audible feedback
+- **Empty input control**: Can require non-empty input when needed
+- **Styled prompts**: Supports `AnsiText` for styled prompts
+
+Here is an example showcasing its usage:
+
+```swift
+// Simple password prompt
+let password = try Terminal.readLineSecure(prompt: "Password: ")
+print("You entered: \(password)")
+// With styled prompt
+let styledPrompt: AnsiText = "\("Enter API Key:", properties: .init(.yellow, nil, .bold)) "
+let apiKey = try Terminal.readLineSecure(prompt: styledPrompt)
+// Require non-empty input with maximum length
+let pin = try Terminal.readLineSecure(prompt: "PIN (4 digits): ",
+                                     maxLength: 4,
+                                     allowEmpty: false)
+```
+
+`readLineSecure` throws an `LineReaderError.CTRLC` exception if CTRL-C is pressed (similar to the readLine API),
+allowing your application to gracefully handle cancellation of sensitive input operations.
 
 ## Requirements
 

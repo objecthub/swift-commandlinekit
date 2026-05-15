@@ -1,7 +1,10 @@
 # Changelog
 
-# 2.0 (2026-05-15)
-- TODO
+# 1.1 (2026-05-15)
+- Support determining the size of ANSI terminals via `Terminal.size`
+- Allow setting the cursor style
+- Provide a representation of styled text via `AnsiText`
+- Comprehensive formatting support for styled text
 
 # 1.0 (2023-08-23)
 - Provide declarative API for defining command-line tools
