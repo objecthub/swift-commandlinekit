@@ -16,6 +16,7 @@
 		CC74D3742AEB0E980054CC5A /* CommandLineKitDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC74D3732AEB0E980054CC5A /* CommandLineKitDemo.swift */; };
 		CC74D37B2AEB0EDD0054CC5A /* CommandLineKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; };
 		CC74D37C2AEB0EDD0054CC5A /* CommandLineKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CC8308242FCA55A900FDD777 /* ColorRGBTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8308222FCA556D00FDD777 /* ColorRGBTests.swift */; };
 		CC8649892FB0700C00DEB33E /* AnsiText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8649882FB0700700DEB33E /* AnsiText.swift */; };
 		CC86498C2FB127E900DEB33E /* AnsiTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */; };
 		CCA2A4C82FB653E100A8B92E /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA2A4C72FB653DE00A8B92E /* String.swift */; };
@@ -89,6 +90,7 @@
 		CC74D3712AEB0E980054CC5A /* CommandLineKitDemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CommandLineKitDemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC74D3732AEB0E980054CC5A /* CommandLineKitDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineKitDemo.swift; sourceTree = "<group>"; };
 		CC7CCB8D2FA6AA0800C05C77 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CC8308222FCA556D00FDD777 /* ColorRGBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorRGBTests.swift; sourceTree = "<group>"; };
 		CC8649882FB0700700DEB33E /* AnsiText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiText.swift; sourceTree = "<group>"; };
 		CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiTextTests.swift; sourceTree = "<group>"; };
 		CCA2A4C72FB653DE00A8B92E /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
@@ -224,6 +226,7 @@
 				CCFC2B0D207A6FD600EDDADD /* EditStateTests.swift */,
 				CCFC2B0F207A6FFA00EDDADD /* AnsiCodesTests.swift */,
 				CC86498A2FB1262300DEB33E /* AnsiTextTests.swift */,
+				CC8308222FCA556D00FDD777 /* ColorRGBTests.swift */,
 				CC5E473020C4263400F21B03 /* LinuxMain.swift */,
 				CCFC2AF0207A69B900EDDADD /* Info.plist */,
 			);
@@ -405,6 +408,7 @@
 				CC86498C2FB127E900DEB33E /* AnsiTextTests.swift in Sources */,
 				CCFC2B0C207A6FAD00EDDADD /* LineReaderHistoryTests.swift in Sources */,
 				CCFC2B10207A6FFA00EDDADD /* AnsiCodesTests.swift in Sources */,
+				CC8308242FCA55A900FDD777 /* ColorRGBTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -38,22 +38,22 @@ import Foundation
 /// 
 public enum TextColor: Sendable, Equatable, Hashable {
   case `default`
-  case black
-  case grey
-  case silver
-  case white
-  case red
-  case green
-  case blue
-  case yellow
-  case maroon
-  case olive
-  case navy
-  case purple
-  case teal
-  case lime
-  case aqua
-  case fuchsia
+  case black        // 30: (0, 0, 0)
+  case maroon       // 31: (128, 0, 0)
+  case green        // 32: (0, 128, 0)
+  case olive        // 33: (128, 128, 0)
+  case navy         // 34: (0, 0, 128)
+  case purple       // 35: (128, 0, 128)
+  case teal         // 36: (0, 128, 128)
+  case silver       // 37: (192, 192, 192)
+  case grey         // 90: (128, 128, 128)
+  case red          // 91: (255, 0, 0)
+  case lime         // 92: (0, 255, 0)
+  case yellow       // 93: (255, 255, 0)
+  case blue         // 94: (0, 0, 255)
+  case fuchsia      // 95: (255, 0, 255)
+  case aqua         // 96: (0, 255, 255)
+  case white        // 97: (255, 255, 255)
   case extended(UInt8)
   
   public init?(colorCode: UInt8, fullColorSupport all256: Bool = false) {
@@ -101,9 +101,26 @@ public enum TextColor: Sendable, Equatable, Hashable {
     }
   }
   
-  public init(color: (UInt8, UInt8, UInt8), fullColorSupport all256: Bool = false) {
+  public init(color: (UInt8, UInt8, UInt8), fullColorSupport all256: Bool? = nil) {
     let code = Terminal.closestColor(to: color, fullColorSupport: all256)
-    if all256 {
+    if all256 ?? Terminal.fullColorSupport {
+      self = .extended(code)
+    } else {
+      let color: TextColor?
+      if code < 8 {
+        color = TextColor(colorCode: code + 30)
+      } else if code < 16 {
+        color = TextColor(colorCode: code + 82)
+      } else {
+        color = nil
+      }
+      self = color ?? .default
+    }
+  }
+  
+  public init(rgb: (Double, Double, Double), fullColorSupport all256: Bool? = nil) {
+    let code = Terminal.closestColor(to: rgb, fullColorSupport: all256)
+    if all256 ?? Terminal.fullColorSupport {
       self = .extended(code)
     } else {
       let color: TextColor?

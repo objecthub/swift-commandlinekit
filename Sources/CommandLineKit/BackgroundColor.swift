@@ -98,15 +98,25 @@ public enum BackgroundColor: Sendable, Equatable, Hashable {
     }
   }
   
-  public init(color: (UInt8, UInt8, UInt8), fullColorSupport all256: Bool = false) {
+  public init(color: (UInt8, UInt8, UInt8), fullColorSupport all256: Bool? = nil) {
     let code = Terminal.closestColor(to: color, fullColorSupport: all256)
-    if all256 {
+    if all256 ?? Terminal.fullColorSupport {
       self = .extended(code)
     } else {
-      let color: BackgroundColor? = code < 8 ? BackgroundColor(colorCode: code + 40)
-                                             : code < 16 ? BackgroundColor(colorCode: code + 92)
-                                                         : nil
-      self = color ?? .default
+      self = (code < 8 ? BackgroundColor(colorCode: code + 40)
+                       : code < 16 ? BackgroundColor(colorCode: code + 92)
+                                   : nil) ?? BackgroundColor.default
+    }
+  }
+  
+  public init(rgb: (Double, Double, Double), fullColorSupport all256: Bool? = nil) {
+    let code = Terminal.closestColor(to: rgb, fullColorSupport: all256)
+    if all256 ?? Terminal.fullColorSupport {
+      self = .extended(code)
+    } else {
+      self = (code < 8 ? BackgroundColor(colorCode: code + 40)
+                       : code < 16 ? BackgroundColor(colorCode: code + 92)
+                                   : nil) ?? BackgroundColor.default
     }
   }
   

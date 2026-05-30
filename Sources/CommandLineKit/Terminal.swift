@@ -409,9 +409,19 @@ public struct Terminal {
     (228, 228, 228), (238, 238, 238)
   ]
   
+  internal static func closestColor(to targetColor: (Double, Double, Double),
+                                    fullColorSupport all256: Bool? = nil) -> UInt8 {
+    return Terminal.closestColor(to: (UInt8(min(1.0, max(0.0, targetColor.0)) * Double(UInt8.max)),
+                                      UInt8(min(1.0, max(0.0, targetColor.1)) * Double(UInt8.max)),
+                                      UInt8(min(1.0, max(0.0, targetColor.2)) * Double(UInt8.max))),
+                                 fullColorSupport: fullColorSupport)
+  }
+  
   internal static func closestColor(to targetColor: (UInt8, UInt8, UInt8),
-                                    fullColorSupport all256: Bool = false) -> UInt8 {
-    let colorTable: [(UInt8, UInt8, UInt8)] = all256 ? colors : Array(colors[0..<8])
+                                    fullColorSupport all256: Bool? = nil) -> UInt8 {
+    let colorTable: [(UInt8, UInt8, UInt8)] = all256 ?? self.fullColorSupport
+                                            ? colors
+                                            : Array(colors[0..<16])
     let distances = colorTable.map {
       sqrt(pow(Double(Int($0.0) - Int(targetColor.0)), 2) +
            pow(Double(Int($0.1) - Int(targetColor.1)), 2) +
