@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.1.1 (2026-06-01)
+- Provide more constructors for `TextColor` and `BackgroundColor`
+
 # 1.1 (2026-05-15)
 - Support determining the size of ANSI terminals via `Terminal.size`
 - Allow setting the cursor style
