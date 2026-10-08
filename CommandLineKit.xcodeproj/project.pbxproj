@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 55;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -25,7 +25,7 @@
 		CCFC2AE3207A662F00EDDADD /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE2207A662F00EDDADD /* Flags.swift */; };
 		CCFC2AE5207A693000EDDADD /* FlagError.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE4207A693000EDDADD /* FlagError.swift */; };
 		CCFC2AE7207A695B00EDDADD /* ConvertibleFromString.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AE6207A695B00EDDADD /* ConvertibleFromString.swift */; };
-		CCFC2AF1207A69B900EDDADD /* CommandLineKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; };
+		CCFC2AF1207A69B900EDDADD /* CommandLineKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCFC2AD3207A636B00EDDADD /* CommandLineKit.framework */; platformFilters = (ios, macos, ); };
 		CCFC2AF8207A69DE00EDDADD /* FlagTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AF7207A69DE00EDDADD /* FlagTests.swift */; };
 		CCFC2AFA207A6AAE00EDDADD /* ControlCharacters.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AF9207A6AAE00EDDADD /* ControlCharacters.swift */; };
 		CCFC2AFC207A6ACA00EDDADD /* LineReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC2AFB207A6ACA00EDDADD /* LineReader.swift */; };
@@ -311,7 +311,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2700;
 				ORGANIZATIONNAME = "Matthias Zenger";
 				TargetAttributes = {
 					CC74D3702AEB0E980054CC5A = {
@@ -422,6 +422,10 @@
 		};
 		CCFC2AF3207A69B900EDDADD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+			);
 			target = CCFC2AD2207A636B00EDDADD /* CommandLineKit */;
 			targetProxy = CCFC2AF2207A69B900EDDADD /* PBXContainerItemProxy */;
 		};
@@ -445,7 +449,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitDemo;
@@ -474,7 +478,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -624,13 +628,13 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CommandLineKit/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKit;
@@ -643,10 +647,10 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,4";
-				TVOS_DEPLOYMENT_TARGET = 15.6;
+				TVOS_DEPLOYMENT_TARGET = 17.6;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 8.7;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
 			};
 			name = Debug;
 		};
@@ -685,13 +689,13 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CommandLineKit/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKit;
@@ -704,10 +708,10 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,4";
-				TVOS_DEPLOYMENT_TARGET = 15.6;
+				TVOS_DEPLOYMENT_TARGET = 17.6;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 8.7;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
 			};
 			name = Release;
 		};
@@ -747,9 +751,12 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -789,9 +796,12 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.objecthub.CommandLineKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

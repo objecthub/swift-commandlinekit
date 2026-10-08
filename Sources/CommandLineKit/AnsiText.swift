@@ -879,19 +879,26 @@ extension Array<AnsiText.Normalized> {
   /// This variant of `joined` will infer the properties of the separator by finding
   /// the intersection of properties from adjacent segments.
   ///
+  /// A separator is placed between every pair of adjacent elements, also if one or both of
+  /// them have no segments. In this case, the separator has no properties.
+  ///
   /// - Parameter separator: The separator string to place between elements.
   /// - Returns: A single normalized text value containing all elements joined by the separator.
   public func joined(separator: String) -> AnsiText.Normalized {
     var result: [(TextProperties, String)] = []
+    var isFirst = true
     var carryoverProperties: TextProperties? = nil
-    for i in self.indices {
-      let segments = self[i].segments
-      if let carryoverProperties {
-        let properties = carryoverProperties.intersect(with: segments.first!.0)
-        result.append((properties, separator))
+    for normalized in self {
+      let segments = normalized.segments
+      if isFirst {
+        isFirst = false
+      } else if let carryoverProperties, let first = segments.first {
+        result.append((carryoverProperties.intersect(with: first.0), separator))
+      } else {
+        result.append((.empty, separator))
       }
       result.append(contentsOf: segments)
-      carryoverProperties = segments.last!.0
+      carryoverProperties = segments.last?.0
     }
     return AnsiText.Normalized(segments: result)
   }
@@ -922,21 +929,13 @@ extension Array<AnsiText> {
   /// This variant of `joined` will infer the properties of the separator by finding
   /// the intersection of properties from adjacent segments.
   ///
+  /// A separator is placed between every pair of adjacent elements, also if one or both of
+  /// them have no segments. In this case, the separator has no properties.
+  ///
   /// - Parameter separator: The separator string to place between elements.
   /// - Returns: A single AnsiText value containing all elements joined by the separator.
   public func joined(separator: String) -> AnsiText {
-    var result: [(TextProperties, String)] = []
-    var carryoverProperties: TextProperties? = nil
-    for i in self.indices {
-      let segments = self[i].normalized.segments
-      if let carryoverProperties {
-        let properties = carryoverProperties.intersect(with: segments.first!.0)
-        result.append((properties, separator))
-      }
-      result.append(contentsOf: segments)
-      carryoverProperties = segments.last!.0
-    }
-    return AnsiText.Normalized(segments: result).text
+    return self.map { $0.normalized }.joined(separator: separator).text
   }
   
   /// Joins the AnsiText objects together interjecting an AnsiText separator.

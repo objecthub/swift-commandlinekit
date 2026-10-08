@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.1.2 (2026-10-08)
+- Fixed crashes when joining `AnsiText.Normalized`/`AnsiText` values without segments
+
 # 1.1.1 (2026-06-01)
 - Provide more constructors for `TextColor` and `BackgroundColor`
 

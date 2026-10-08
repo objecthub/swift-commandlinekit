@@ -373,6 +373,76 @@ class AnsiTextTests: XCTestCase {
     }
   }
   
+  // MARK: - Array Joining Tests (Texts without segments)
+  
+  func testNormalizedWithoutSegments() {
+    // The optimization drops empty segments, which can leave no segment at all
+    let dropped = AnsiText.Normalized(segments: [(.empty, ""), (.empty, "")])
+    XCTAssertEqual(dropped.segments.count, 0)
+    XCTAssertEqual(AnsiText.Normalized(segments: []).segments.count, 0)
+    XCTAssertEqual(AnsiText.Normalized("").segments.count, 1)
+  }
+  
+  func testJoinNormalizedArrayWithEmptyElements() {
+    let empty = AnsiText.Normalized(segments: [])
+    let a = AnsiText.Normalized("a")
+    let b = AnsiText.Normalized("b")
+    XCTAssertEqual([a, empty].joined(separator: " ").description, "a ")
+    XCTAssertEqual([empty, a].joined(separator: " ").description, " a")
+    XCTAssertEqual([empty].joined(separator: " ").description, "")
+    XCTAssertEqual([a, empty, b].joined(separator: "\n").description, "a\n\nb")
+    XCTAssertEqual([empty, empty].joined(separator: " ").description, " ")
+    XCTAssertEqual([empty, empty, empty].joined(separator: ",").description, ",,")
+    XCTAssertEqual(([] as [AnsiText.Normalized]).joined(separator: " ").description, "")
+  }
+  
+  func testJoinNormalizedArrayEmptyElementsKeepNonEmptyResults() {
+    let empty = AnsiText.Normalized(segments: [])
+    let red = TextProperties(.red)
+    let a = AnsiText.Normalized("a", properties: red)
+    let b = AnsiText.Normalized("b", properties: red)
+    // Neighbors with segments still infer the separator's properties
+    let inferred = [a, b].joined(separator: " ")
+    XCTAssertEqual(inferred.segments.count, 1)
+    XCTAssertEqual(inferred.segments[0].0, red)
+    XCTAssertEqual(inferred.description, "a b")
+    // A neighbor without segments results in a separator without properties
+    let joined = [a, empty, b].joined(separator: "-")
+    XCTAssertEqual(joined.description, "a--b")
+    XCTAssertEqual(joined.segments.count, 3)
+    XCTAssertEqual(joined.segments[0].0, red)
+    XCTAssertEqual(joined.segments[1].0, .empty)
+    XCTAssertEqual(joined.segments[1].1, "--")
+    XCTAssertEqual(joined.segments[2].0, red)
+    let leading = [empty, a].joined(separator: "-")
+    XCTAssertEqual(leading.segments.map { $0.0 }, [.empty, red])
+    XCTAssertEqual(leading.description, "-a")
+  }
+  
+  func testJoinAnsiTextArrayWithEmptyElements() {
+    let empty = AnsiText.segmented([])
+    XCTAssertEqual(empty.normalized.segments.count, 0)
+    XCTAssertEqual([AnsiText.plain("a"), empty].joined(separator: " ").description, "a ")
+    XCTAssertEqual([empty, AnsiText.plain("a")].joined(separator: " ").description, " a")
+    XCTAssertEqual([empty].joined(separator: " ").description, "")
+    XCTAssertEqual([AnsiText.plain("a"), empty, AnsiText.plain("b")]
+                     .joined(separator: "\n").description, "a\n\nb")
+    XCTAssertEqual([empty, empty].joined(separator: " ").description, " ")
+    XCTAssertEqual([AnsiText.plain("a"), AnsiText.empty, AnsiText.plain("b")]
+                     .joined(separator: "\n").description, "a\n\nb")
+    XCTAssertEqual(([] as [AnsiText]).joined(separator: " ").description, "")
+  }
+  
+  func testJoinAnsiTextArrayEmptyElementsKeepNonEmptyResults() {
+    let red = TextProperties(.red)
+    let joined = [AnsiText.annotated(red, "a"), AnsiText.annotated(red, "b")]
+                   .joined(separator: " ")
+    let normalized = joined.normalized
+    XCTAssertEqual(normalized.segments.count, 1)
+    XCTAssertEqual(normalized.segments[0].0, red)
+    XCTAssertEqual(joined.description, "a b")
+  }
+  
   // MARK: - Alignment Tests
   
   func testJoinedWithMaxWidthLeftAlign() {
@@ -443,6 +513,41 @@ class AnsiTextTests: XCTestCase {
     ]
     let lines = words.joined(separator: " ", maxWidth: 20, align: .left)
     XCTAssertEqual(lines.count, 2) // nil should create line break
+  }
+  
+  func testJoinedWithMaxWidthAndBlankLines() {
+    let words: [AnsiText.Normalized?] = [nil, AnsiText.Normalized("a"), nil, nil]
+    let lines = words.joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(lines.map { $0.description }, ["", "a", ""])
+    XCTAssertEqual(lines.map { $0.segments.count }, [0, 1, 0])
+    // Joining the lines must tolerate the lines without segments
+    XCTAssertEqual(lines.joined(separator: "\n").description, "\na\n")
+    // Same for padded and aligned lines
+    let padded = words.joined(separator: " ", maxWidth: 4, align: .right)
+    XCTAssertEqual(padded.map { $0.description }, ["    ", "   a", "    "])
+    XCTAssertEqual(padded.joined(separator: "\n").description, "    \n   a\n    ")
+  }
+  
+  func testJoinedWithMaxWidthAndEmptyWords() {
+    let empty = AnsiText.Normalized(segments: [])
+    let words = [AnsiText.Normalized("a"), empty, AnsiText.Normalized("b")]
+    let lines = words.joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(lines.count, 1)
+    XCTAssertEqual(lines[0].description, "a  b")
+    let onlyEmpty = ([empty, empty] as [AnsiText.Normalized?])
+                      .joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(onlyEmpty.count, 1)
+    XCTAssertEqual(onlyEmpty[0].description, " ")
+  }
+  
+  func testJoinedWithMaxWidthOnEmptyArray() {
+    let lines = ([] as [AnsiText.Normalized]).joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(lines.count, 1)
+    XCTAssertEqual(lines[0].segments.count, 0)
+    XCTAssertEqual(lines.joined(separator: "\n").description, "")
+    let noLines = ([] as [AnsiText.Normalized?]).joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(noLines.count, 1)
+    XCTAssertEqual(noLines.joined(separator: "\n").description, "")
   }
   
   func testJoinedWithFillProperties() {
@@ -1195,12 +1300,24 @@ class AnsiTextTests: XCTestCase {
     ("testJoinNormalizedArrayWithAnsiSeparator", testJoinNormalizedArrayWithAnsiSeparator),
     ("testJoinNormalizedArrayPropertiesInferred", testJoinNormalizedArrayPropertiesInferred),
     
+    // Array Joining with texts without segments
+    ("testNormalizedWithoutSegments", testNormalizedWithoutSegments),
+    ("testJoinNormalizedArrayWithEmptyElements", testJoinNormalizedArrayWithEmptyElements),
+    ("testJoinNormalizedArrayEmptyElementsKeepNonEmptyResults",
+     testJoinNormalizedArrayEmptyElementsKeepNonEmptyResults),
+    ("testJoinAnsiTextArrayWithEmptyElements", testJoinAnsiTextArrayWithEmptyElements),
+    ("testJoinAnsiTextArrayEmptyElementsKeepNonEmptyResults",
+     testJoinAnsiTextArrayEmptyElementsKeepNonEmptyResults),
+    
     // Alignment
     ("testJoinedWithMaxWidthLeftAlign", testJoinedWithMaxWidthLeftAlign),
     ("testJoinedWithMaxWidthRightAlign", testJoinedWithMaxWidthRightAlign),
     ("testJoinedWithMaxWidthCenterAlign", testJoinedWithMaxWidthCenterAlign),
     ("testJoinedWithMaxWidthWrapping", testJoinedWithMaxWidthWrapping),
     ("testJoinedWithNilSeparators", testJoinedWithNilSeparators),
+    ("testJoinedWithMaxWidthAndBlankLines", testJoinedWithMaxWidthAndBlankLines),
+    ("testJoinedWithMaxWidthAndEmptyWords", testJoinedWithMaxWidthAndEmptyWords),
+    ("testJoinedWithMaxWidthOnEmptyArray", testJoinedWithMaxWidthOnEmptyArray),
     ("testJoinedWithFillProperties", testJoinedWithFillProperties),
     
     // Justified
