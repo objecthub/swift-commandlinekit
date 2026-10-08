@@ -116,6 +116,9 @@ public enum AnsiText: Sendable,
   /// `Normalized` flattens the hierarchical structure of `AnsiText` into a linear
   /// sequence of property-string pairs, making it easier to manipulate and render
   /// the text.
+  ///
+  /// Segments with empty strings are dropped. Consequently, text without characters
+  /// is always represented without any segments.
   public struct Normalized: Sendable,
                             Equatable,
                             Hashable,
@@ -127,7 +130,8 @@ public enum AnsiText: Sendable,
     /// and a string.
     public var segments: [(TextProperties, String)]
     
-    /// Initializes a new normalized ANSI text value from a segments array.
+    /// Initializes a new normalized ANSI text value from a segments array. Empty segments
+    /// are dropped and adjacent segments with identical properties are merged.
     public init(segments: [(TextProperties, String)]) {
       self.init(segments: segments, optimize: true)
     }
@@ -151,7 +155,7 @@ public enum AnsiText: Sendable,
     
     /// Initializes a new normalized ANSI text value.
     init(segments: [(TextProperties, String)], optimize: Bool = true) {
-      if optimize && segments.count > 1 {
+      if optimize && !segments.isEmpty {
         var optimized: [(TextProperties, String)] = []
         var i = 0
         while i < segments.count && segments[i].1.isEmpty {
@@ -186,17 +190,10 @@ public enum AnsiText: Sendable,
       }
     }
     
-    /// Applies the given properties to all segments
+    /// Applies the given properties to all segments. Adjacent segments that end up with
+    /// identical properties are merged.
     public mutating func apply(properties: TextProperties, override: Bool = true) {
-      if override {
-        for i in self.segments.indices {
-          self.segments[i].0 = self.segments[i].0.with(properties)
-        }
-      } else {
-        for i in self.segments.indices {
-          self.segments[i].0 = properties.with(self.segments[i].0)
-        }
-      }
+      self = self.applying(properties: properties, override: override)
     }
     
     /// Appends the given normalized text.
@@ -595,7 +592,8 @@ public enum AnsiText: Sendable,
     }
   }
   
-  /// Returns the total character count of the text, excluding formatting information.
+  /// Returns the total display width of the text in a terminal, excluding formatting
+  /// information.
   public var terminalDisplayWidth: Int {
     switch self {
       case .plain(let str):
@@ -748,8 +746,9 @@ extension Array<AnsiText.Normalized?> {
   /// on the left and if `fill` is provided also on the right. `fill`
   /// determines the text properties of the padding.
   ///
-  /// This method performs word wrapping: when adding a word would exceed `maxWidth`,
-  /// a new line is created. `nil` elements force a line break.
+  /// This method performs word wrapping: when adding a word, including the separator
+  /// preceding it, would exceed `maxWidth`, a new line is created. `nil` elements force
+  /// a line break.
   ///
   /// - Parameters:
   ///   - separator: The separator string to use between elements. Defaults to a single space.
@@ -765,6 +764,7 @@ extension Array<AnsiText.Normalized?> {
                      padCharacter: Character = " ",
                      fill: TextProperties? = nil) -> [AnsiText.Normalized] {
     let pad = "\(padCharacter)"
+    let separatorCount = alignWidth ? separator.terminalDisplayWidth : separator.count
     var lines: [AnsiText.Normalized] = []
     var currLine: [AnsiText.Normalized] = []
     var currCount = 0
@@ -795,14 +795,16 @@ extension Array<AnsiText.Normalized?> {
     for word in self {
       if let word {
         let wordCount = alignWidth ? word.terminalDisplayWidth : word.count
-        if currCount > 0 {
-          if currCount + wordCount >= maxWidth {
+        // The line already has a word if `currLine` isn't empty; `currCount` can still be
+        // zero in this case if all words so far are empty
+        if !currLine.isEmpty {
+          if currCount + separatorCount + wordCount > maxWidth {
             insert()
             currLine = [word]
             currCount = wordCount
           } else {
             currLine.append(word)
-            currCount += wordCount + 1
+            currCount += separatorCount + wordCount
           }
         } else {
           currLine.append(word)
@@ -851,8 +853,8 @@ extension Array<AnsiText.Normalized> {
   /// on the left and if `fill` is provided also on the right. `fill`
   /// determines the text properties of the padding.
   ///
-  /// This method performs word wrapping: when adding a word would exceed `maxWidth`,
-  /// a new line is created.
+  /// This method performs word wrapping: when adding a word, including the separator
+  /// preceding it, would exceed `maxWidth`, a new line is created.
   ///
   /// - Parameters:
   ///   - separator: The separator string to use between elements. Defaults to a single space.

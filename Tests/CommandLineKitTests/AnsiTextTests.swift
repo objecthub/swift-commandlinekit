@@ -373,6 +373,113 @@ class AnsiTextTests: XCTestCase {
     }
   }
   
+  // MARK: - Empty Text Tests
+  
+  func testNormalizedEmptyTextHasNoSegments() {
+    typealias N = AnsiText.Normalized
+    XCTAssertEqual(N().segments.count, 0)
+    XCTAssertEqual(N("").segments.count, 0)
+    XCTAssertEqual(N("", properties: .red).segments.count, 0)
+    XCTAssertEqual(N(repeating: "x", count: 0).segments.count, 0)
+    XCTAssertEqual(N(repeating: Character("x"), count: 0).segments.count, 0)
+    XCTAssertEqual(N(segments: [(.red, "")]).segments.count, 0)
+    XCTAssertEqual(N(segments: [(.red, ""), (.empty, "")]).segments.count, 0)
+    XCTAssertEqual(AnsiText.plain("").normalized.segments.count, 0)
+    XCTAssertEqual(AnsiText.empty.normalized.segments.count, 0)
+    XCTAssertEqual(AnsiText.annotated(.red, "").normalized.segments.count, 0)
+    // Text with characters keeps its segments
+    XCTAssertEqual(N("a").segments.count, 1)
+    XCTAssertEqual(N("a", properties: .red).segments.count, 1)
+    XCTAssertEqual(N(segments: [(.red, "a")]).segments.count, 1)
+    XCTAssertEqual(N(segments: [(.red, ""), (.blue, "a")]).segments.count, 1)
+  }
+  
+  func testNormalizedEmptyTextIsCanonical() {
+    let empty = AnsiText.Normalized(segments: [])
+    XCTAssertEqual(AnsiText.Normalized(), empty)
+    XCTAssertEqual(AnsiText.Normalized(""), empty)
+    XCTAssertEqual(AnsiText.Normalized("", properties: .red), empty)
+    XCTAssertEqual(AnsiText.Normalized(segments: [(.red, "")]), empty)
+    XCTAssertEqual(AnsiText.empty.normalized, empty)
+    XCTAssertEqual(AnsiText.segmented([]).normalized, AnsiText.plain("").normalized)
+    XCTAssertEqual(AnsiText.Normalized("").hashValue, empty.hashValue)
+    XCTAssertEqual(Set([AnsiText.Normalized(""),
+                        empty,
+                        AnsiText.Normalized(segments: [(.red, "")])]).count, 1)
+    // Operations resulting in empty text
+    XCTAssertEqual(AnsiText.Normalized("") + AnsiText.Normalized(""), empty)
+    XCTAssertEqual(empty.appending(AnsiText.Normalized("")), empty)
+    XCTAssertEqual(AnsiText.Normalized("").applying(properties: .red), empty)
+    XCTAssertEqual(AnsiText.Normalized("").tokenize(), [])
+    var appended = AnsiText.Normalized("")
+    appended.append(AnsiText.Normalized(""))
+    XCTAssertEqual(appended, empty)
+    // Blank lines
+    let blank = ([nil, AnsiText.Normalized("")] as [AnsiText.Normalized?])
+                  .justified(maxWidth: 5, align: .right)
+    XCTAssertEqual(blank, [empty, empty])
+  }
+  
+  func testNormalizedEmptyTextBehavesLikeNonEmptyTextWhenAppended() {
+    var text = AnsiText.Normalized("")
+    text.append(AnsiText.Normalized("a", properties: .red))
+    XCTAssertEqual(text, AnsiText.Normalized("a", properties: .red))
+    text.append(AnsiText.Normalized(""))
+    XCTAssertEqual(text.segments.count, 1)
+    XCTAssertEqual(text.description, "a")
+    XCTAssertTrue(text.contains { $0.character == "a" })
+    XCTAssertEqual(AnsiText.Normalized("").count, 0)
+    XCTAssertTrue(AnsiText.Normalized("").isEmpty)
+    XCTAssertEqual(Array(AnsiText.Normalized("")).count, 0)
+    XCTAssertEqual(AnsiText.Normalized("").encodedString, "")
+    XCTAssertEqual(AnsiText.Normalized("").text.description, "")
+  }
+  
+  // MARK: - Apply Tests
+  
+  func testApplyMergesAdjacentSegments() {
+    let original = AnsiText.Normalized(segments: [(.red, "a"), (.blue, "b"), (.blue, "c")])
+    XCTAssertEqual(original.segments.count, 2)
+    var mutated = original
+    mutated.apply(properties: .green)
+    XCTAssertEqual(mutated.segments.count, 1)
+    XCTAssertEqual(mutated.segments[0].0, .green)
+    XCTAssertEqual(mutated.segments[0].1, "abc")
+    XCTAssertEqual(mutated, original.applying(properties: .green))
+  }
+  
+  func testApplyWithoutOverrideMergesAdjacentSegments() {
+    let original = AnsiText.Normalized(segments: [(.empty, "a"), (.green, "b")])
+    var mutated = original
+    mutated.apply(properties: .green, override: false)
+    XCTAssertEqual(mutated.segments.count, 1)
+    XCTAssertEqual(mutated.segments[0].0, .green)
+    XCTAssertEqual(mutated.description, "ab")
+    XCTAssertEqual(mutated, original.applying(properties: .green, override: false))
+  }
+  
+  func testApplyKeepsSegmentsWithDifferentProperties() {
+    let original = AnsiText.Normalized(segments: [(.red, "a"), (.blue, "b")])
+    var mutated = original
+    mutated.apply(properties: .bold)
+    XCTAssertEqual(mutated.segments.count, 2)
+    XCTAssertEqual(mutated.segments[0].0, TextProperties(textColor: .red, textStyles: [.bold]))
+    XCTAssertEqual(mutated.segments[1].0, TextProperties(textColor: .blue, textStyles: [.bold]))
+    XCTAssertEqual(mutated, original.applying(properties: .bold))
+    // Applying properties that don't override anything doesn't merge different segments
+    var kept = original
+    kept.apply(properties: .green, override: false)
+    XCTAssertEqual(kept.segments.count, 2)
+    XCTAssertEqual(kept, original.applying(properties: .green, override: false))
+  }
+  
+  func testApplyOnTextWithoutSegments() {
+    var text = AnsiText.Normalized()
+    text.apply(properties: .red)
+    XCTAssertEqual(text.segments.count, 0)
+    XCTAssertEqual(text, AnsiText.Normalized(segments: []))
+  }
+  
   // MARK: - Array Joining Tests (Texts without segments)
   
   func testNormalizedWithoutSegments() {
@@ -380,7 +487,7 @@ class AnsiTextTests: XCTestCase {
     let dropped = AnsiText.Normalized(segments: [(.empty, ""), (.empty, "")])
     XCTAssertEqual(dropped.segments.count, 0)
     XCTAssertEqual(AnsiText.Normalized(segments: []).segments.count, 0)
-    XCTAssertEqual(AnsiText.Normalized("").segments.count, 1)
+    XCTAssertEqual(AnsiText.Normalized("").segments.count, 0)
   }
   
   func testJoinNormalizedArrayWithEmptyElements() {
@@ -548,6 +655,104 @@ class AnsiTextTests: XCTestCase {
     let noLines = ([] as [AnsiText.Normalized?]).joined(separator: " ", maxWidth: 10)
     XCTAssertEqual(noLines.count, 1)
     XCTAssertEqual(noLines.joined(separator: "\n").description, "")
+  }
+  
+  func testJoinedWithMaxWidthAndLeadingEmptyWord() {
+    let noSegments = AnsiText.Normalized(segments: [])
+    let emptyString = AnsiText.Normalized("")
+    let abc = AnsiText.Normalized("abc")
+    // The separator after a leading empty word counts towards the line width
+    let right = [noSegments, abc].joined(separator: " ", maxWidth: 10, align: .right)
+    XCTAssertEqual(right.map { $0.description }, ["       abc"])
+    let left = [emptyString, abc].joined(separator: " ",
+                                         maxWidth: 10,
+                                         align: .left,
+                                         fill: .green)
+    XCTAssertEqual(left.map { $0.description }, [" abc      "])
+    // A word that does not fit next to the separator moves to the next line
+    let wide = AnsiText.Normalized(repeating: "x", count: 10)
+    let wrapped = [noSegments, wide].joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(wrapped.map { $0.description }, ["", "xxxxxxxxxx"])
+    let wrapped2 = [emptyString, wide].joined(separator: " ", maxWidth: 10)
+    XCTAssertEqual(wrapped2.map { $0.description }, ["", "xxxxxxxxxx"])
+  }
+  
+  func testJoinedWithMaxWidthPadsAllLinesToMaxWidth() {
+    // If no word is wider than `maxWidth`, every line is exactly `maxWidth` wide. Left and
+    // center alignment only pad on the right if `fill` is provided.
+    let words = [AnsiText.Normalized(segments: []),
+                 AnsiText.Normalized(""),
+                 AnsiText.Normalized("a"),
+                 AnsiText.Normalized("bbb"),
+                 AnsiText.Normalized("ccccc")]
+    var sequences: [[AnsiText.Normalized]] = [[]]
+    for _ in 0..<4 {
+      sequences = sequences.flatMap { sequence in words.map { sequence + [$0] } }
+      for sequence in sequences {
+        let right = sequence.joined(separator: " ", maxWidth: 8, align: .right)
+        let center = sequence.joined(separator: " ", maxWidth: 8, align: .center, fill: .green)
+        let left = sequence.joined(separator: " ", maxWidth: 8, align: .left, fill: .green)
+        for lines in [right, center, left] {
+          for line in lines {
+            XCTAssertEqual(line.count, 8, "\(sequence.map { $0.description }) -> '\(line)'")
+          }
+        }
+      }
+    }
+  }
+  
+  func testJoinedWithMaxWidthAndSeparatorWidth() {
+    let words = ["aaa", "bbb", "ccc"].map { AnsiText.Normalized($0) }
+    // "aaa, bbb" has exactly 8 characters, so it fits
+    let fits = words.joined(separator: ", ", maxWidth: 8, align: .right)
+    XCTAssertEqual(fits.map { $0.description }, ["aaa, bbb", "     ccc"])
+    // "aaa, bbb" doesn't fit into 7 characters
+    let tooWide = words.joined(separator: ", ", maxWidth: 7, align: .right)
+    XCTAssertEqual(tooWide.map { $0.description }, ["    aaa", "    bbb", "    ccc"])
+    // An empty separator doesn't take up any space
+    let noSeparator = words.joined(separator: "", maxWidth: 6, align: .left)
+    XCTAssertEqual(noSeparator.map { $0.description }, ["aaabbb", "ccc"])
+    // The default separator is unaffected
+    let space = words.joined(maxWidth: 7, align: .left)
+    XCTAssertEqual(space.map { $0.description }, ["aaa bbb", "ccc"])
+  }
+  
+  func testJoinedWithMaxWidthAndSeparatorDisplayWidth() {
+    let separator = "－" // fullwidth hyphen-minus: one character, two columns
+    XCTAssertEqual(separator.count, 1)
+    XCTAssertEqual(separator.terminalDisplayWidth, 2)
+    let words = ["aa", "bb", "cc"].map { AnsiText.Normalized($0) }
+    let byWidth = words.joined(separator: separator,
+                               maxWidth: 7,
+                               align: .right,
+                               alignWidth: true)
+    XCTAssertEqual(byWidth.map { $0.description }, [" aa－bb", "     cc"])
+    XCTAssertEqual(byWidth.map { $0.terminalDisplayWidth }, [7, 7])
+    let byCount = words.joined(separator: separator, maxWidth: 7, align: .right)
+    XCTAssertEqual(byCount.map { $0.description }, ["  aa－bb", "     cc"])
+    XCTAssertEqual(byCount.map { $0.count }, [7, 7])
+  }
+  
+  func testJoinedWithMaxWidthPadsAllLinesWithAnySeparator() {
+    // If no word is wider than `maxWidth`, every line is exactly `maxWidth` wide
+    let words = [AnsiText.Normalized(segments: []),
+                 AnsiText.Normalized(""),
+                 AnsiText.Normalized("a"),
+                 AnsiText.Normalized("bbb"),
+                 AnsiText.Normalized("ccccc")]
+    var sequences: [[AnsiText.Normalized]] = [[]]
+    for _ in 0..<4 {
+      sequences = sequences.flatMap { sequence in words.map { sequence + [$0] } }
+      for sequence in sequences {
+        for separator in ["", ", ", "---"] {
+          let lines = sequence.joined(separator: separator, maxWidth: 8, align: .right)
+          for line in lines {
+            XCTAssertEqual(line.count, 8,
+                           "\(sequence.map { $0.description }) '\(separator)' -> '\(line)'")
+          }
+        }
+      }
+    }
   }
   
   func testJoinedWithFillProperties() {
@@ -1300,6 +1505,18 @@ class AnsiTextTests: XCTestCase {
     ("testJoinNormalizedArrayWithAnsiSeparator", testJoinNormalizedArrayWithAnsiSeparator),
     ("testJoinNormalizedArrayPropertiesInferred", testJoinNormalizedArrayPropertiesInferred),
     
+    // Empty text and apply
+    ("testNormalizedEmptyTextHasNoSegments", testNormalizedEmptyTextHasNoSegments),
+    ("testNormalizedEmptyTextIsCanonical", testNormalizedEmptyTextIsCanonical),
+    ("testNormalizedEmptyTextBehavesLikeNonEmptyTextWhenAppended",
+     testNormalizedEmptyTextBehavesLikeNonEmptyTextWhenAppended),
+    ("testApplyMergesAdjacentSegments", testApplyMergesAdjacentSegments),
+    ("testApplyWithoutOverrideMergesAdjacentSegments",
+     testApplyWithoutOverrideMergesAdjacentSegments),
+    ("testApplyKeepsSegmentsWithDifferentProperties",
+     testApplyKeepsSegmentsWithDifferentProperties),
+    ("testApplyOnTextWithoutSegments", testApplyOnTextWithoutSegments),
+  
     // Array Joining with texts without segments
     ("testNormalizedWithoutSegments", testNormalizedWithoutSegments),
     ("testJoinNormalizedArrayWithEmptyElements", testJoinNormalizedArrayWithEmptyElements),
@@ -1318,6 +1535,13 @@ class AnsiTextTests: XCTestCase {
     ("testJoinedWithMaxWidthAndBlankLines", testJoinedWithMaxWidthAndBlankLines),
     ("testJoinedWithMaxWidthAndEmptyWords", testJoinedWithMaxWidthAndEmptyWords),
     ("testJoinedWithMaxWidthOnEmptyArray", testJoinedWithMaxWidthOnEmptyArray),
+    ("testJoinedWithMaxWidthAndLeadingEmptyWord", testJoinedWithMaxWidthAndLeadingEmptyWord),
+    ("testJoinedWithMaxWidthPadsAllLinesToMaxWidth", testJoinedWithMaxWidthPadsAllLinesToMaxWidth),
+    ("testJoinedWithMaxWidthAndSeparatorWidth", testJoinedWithMaxWidthAndSeparatorWidth),
+    ("testJoinedWithMaxWidthAndSeparatorDisplayWidth",
+     testJoinedWithMaxWidthAndSeparatorDisplayWidth),
+    ("testJoinedWithMaxWidthPadsAllLinesWithAnySeparator",
+     testJoinedWithMaxWidthPadsAllLinesWithAnySeparator),
     ("testJoinedWithFillProperties", testJoinedWithFillProperties),
     
     // Justified

@@ -2,6 +2,13 @@
 
 # 1.1.2 (2026-10-08)
 - Fixed crashes when joining `AnsiText.Normalized`/`AnsiText` values without segments
+- Fixed line widths calculated by `joined(separator:maxWidth:)` for lines starting with empty texts
+- `joined(separator:maxWidth:)` takes the actual width of the separator into account
+- `AnsiText.Normalized` values without characters consistently have no segments, e.g.
+  `Normalized("") == Normalized(segments: [])`
+- Fixed `AnsiText.Normalized.apply(properties:override:)` to merge adjacent segments with
+  identical properties
+- Fixed documentation of `AnsiText.terminalDisplayWidth`
 
 # 1.1.1 (2026-06-01)
 - Provide more constructors for `TextColor` and `BackgroundColor`
