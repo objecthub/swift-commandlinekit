@@ -1,5 +1,19 @@
 # Changelog
 
+# 1.1.3 (2026-10-24)
+- Repeated arguments can be declared with `greedy: false`. Every occurrence of such a flag takes
+  exactly one parameter and multiple parameters are provided by repeating the flag, e.g.
+  `-r dir1 -r dir2`. Parameters following the flag, such as a program name, are not consumed by
+  the flag, and a missing parameter is reported as an error. By default, repeated arguments are
+  greedy and consume all arguments up to the next flag.
+- New terminator `--` for the parameters of greedy repeated arguments, e.g.
+  `-f a b -- -l c d -- program`. In contrast to the terminator `---`, it does not end the parsing
+  of flags: flags following it are parsed as usual, and it can be used with several repeated
+  arguments. `--` is ignored if it does not follow a repeated argument.
+- New property `Argument.greedy`; new parameter `greedy` for the initializers of `Argument` and
+  `RepeatedArgument`, for `Flags.argument`, `Flags.arguments`, `Flags.strings`, `Flags.ints`,
+  `Flags.doubles` and `Flags.enums`, and for the `@CommandArguments` property wrapper
+
 # 1.1.2 (2026-10-08)
 - Fixed crashes when joining `AnsiText.Normalized`/`AnsiText` values without segments
 - Fixed line widths calculated by `joined(separator:maxWidth:)` for lines starting with empty texts

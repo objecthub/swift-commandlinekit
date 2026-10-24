@@ -130,33 +130,47 @@ public final class Option: Flag {
 
 ///
 /// An `Argument` is a flag with parameters. Flags which allow multiple parameters need to
-/// get initialized such that `repeated` is set to true. For being able to handle
-/// arguments, the argument object needs to be provided a `handler` function which is
-/// responsible for parsing the string parameters and persisting the result.
+/// get initialized such that `repeated` is set to true. By default, a repeated argument is
+/// _greedy_: all command-line arguments that follow the flag identifier, up to the next flag
+/// or the terminator, are parameters of the flag (as in `--size 2 4 8`). Such an argument
+/// also consumes a trailing program name or file name, e.g. `--path a b file.txt`. If `greedy`
+/// is set to false, a flag identifier is followed by exactly one parameter and multiple
+/// parameters are provided by repeating the flag identifier (as in `--size 2 --size 4`).
+/// For being able to handle arguments, the argument object needs to be provided a `handler`
+/// function which is responsible for parsing the string parameters and persisting the result.
 ///
 public class Argument: Flag {
-  
+
   /// Is this argument repeated?
   public let repeated: Bool
-  
+
+  /// Does a repeated argument consume all parameters following the flag identifier? If this
+  /// is false, every occurrence of the flag identifier takes exactly one parameter. This
+  /// setting is only relevant for repeated arguments.
+  public let greedy: Bool
+
   /// Handler for parsing and persisting argument values.
   internal private(set) var handler: (String) throws -> Void
-  
+
   /// A readable parameter name, used for documentation purposes.
   public let paramIdent: String
-  
+
   /// Initializes an argument from the given short name, long name, and description. `repeated`
-  /// needs to be set to true if the argument accepts multiple parameters. `handler` is used
-  /// for parsing and persisting parameters.
+  /// needs to be set to true if the argument accepts multiple parameters. If `greedy` is false,
+  /// a repeated argument takes one parameter per occurrence of the flag identifier. `handler`
+  /// is used for parsing and persisting parameters.
   public init(shortName: Character?,
               longName: String?,
               paramIdent: String? = nil,
               description: String,
               repeated: Bool = false,
+              greedy: Bool = true,
               handler: @escaping (String) throws -> Void) {
     self.repeated = repeated
+    self.greedy = greedy
     self.handler = handler
-    self.paramIdent = paramIdent == nil ? (repeated ? "<value> ..." : "<value>") : paramIdent!
+    self.paramIdent = paramIdent ??
+                      (repeated && greedy ? "<value> ..." : "<value>")
     super.init(shortName: shortName, longName: longName, description: description)
   }
   
@@ -169,6 +183,7 @@ public class Argument: Flag {
                              paramIdent: String? = nil,
                              description: String,
                              repeated: Bool = false,
+                             greedy: Bool = true,
                              parse: @escaping (String) -> T?,
                              set: @escaping (T) throws -> Void) {
     self.init(shortName: shortName,
@@ -176,6 +191,7 @@ public class Argument: Flag {
               paramIdent: paramIdent,
               description: description,
               repeated: repeated,
+              greedy: greedy,
               handler: { x in })
     self.setHandler(parse: parse, set: set)
   }
@@ -189,12 +205,14 @@ public class Argument: Flag {
                                                     paramIdent: String? = nil,
                                                     description: String,
                                                     repeated: Bool = false,
+                                                    greedy: Bool = true,
                                                     set: @escaping (T) throws -> Void) {
     self.init(shortName: shortName,
               longName: longName,
               paramIdent: paramIdent,
               description: description,
               repeated: repeated,
+              greedy: greedy,
               handler: { x in })
     self.setHandler(parse: T.from, set: set)
   }
@@ -208,6 +226,7 @@ public class Argument: Flag {
                                                paramIdent: String? = nil,
                                                description: String,
                                                repeated: Bool = false,
+                                               greedy: Bool = true,
                                                set: @escaping (T) throws -> Void)
                          where T.RawValue: ConvertibleFromString {
     self.init(shortName: shortName,
@@ -215,6 +234,7 @@ public class Argument: Flag {
               paramIdent: paramIdent,
               description: description,
               repeated: repeated,
+              greedy: greedy,
               handler: { x in })
     self.setHandler(parse: T.from, set: set)
   }
@@ -230,13 +250,23 @@ public class Argument: Flag {
     }
   }
   
-  /// Parses an option.
+  /// Parses an option. A greedy repeated argument consumes all parameters up to the next flag
+  /// or terminator (and accepts the absence of parameters). The argument terminator `--` ends
+  /// the parameters of the argument and is consumed, whereas the terminator `---` is left for
+  /// the parser of the flags. All other arguments consume exactly one parameter, and it is an
+  /// error if there is none.
   public override func parse(_ args: [String], at index: Int) throws -> Int {
+    let multiple = self.repeated && self.greedy
     var i = index
     while i < args.count {
       let arg = args[i]
-      if arg == Flags.terminator || arg.hasPrefix(Flags.longNamePrefix) {
-        guard self.repeated else {
+      if arg == Flags.argumentTerminator {
+        guard multiple else {
+          throw FlagError(.missingValue, self)
+        }
+        return i + 1
+      } else if arg == Flags.terminator || arg.hasPrefix(Flags.longNamePrefix) {
+        guard multiple else {
           throw FlagError(.missingValue, self)
         }
         return i
@@ -247,11 +277,11 @@ public class Argument: Flag {
         try self.handler(arg)
         self.wasSet = true
         i += 1
-        guard self.repeated else {
+        guard multiple else {
           return i
         }
       } else if arg.hasPrefix("-") {
-        guard self.repeated else {
+        guard multiple else {
           throw FlagError(.missingValue, self)
         }
         return i
@@ -259,12 +289,12 @@ public class Argument: Flag {
         try self.handler(arg)
         self.wasSet = true
         i += 1
-        guard self.repeated else {
+        guard multiple else {
           return i
         }
       }
     }
-    guard self.repeated else {
+    guard multiple else {
       throw FlagError(.missingValue, self)
     }
     return i
@@ -328,13 +358,16 @@ public final class RepeatedArgument<T>: Argument {
   public var value: [T]
   
   /// Initializes a repeated argument from the given short name, long name, and description.
-  /// `maxCount` determines how many parameters are acceptable. `parse` is used to parse strings
-  /// into values of type `T`.
+  /// `maxCount` determines how many parameters are acceptable. If `greedy` is false, every
+  /// occurrence of the flag takes exactly one parameter, i.e. multiple parameters are provided
+  /// by repeating the flag; this way, parameters following the flag, e.g. program names, are
+  /// not consumed by the flag. `parse` is used to parse strings into values of type `T`.
   public init(shortName: Character?,
               longName: String?,
               paramIdent: String? = nil,
               description: String,
               maxCount: Int = Int.max,
+              greedy: Bool = true,
               parse: @escaping (String) -> T?) {
     self.maxCount = maxCount
     self.value = []
@@ -343,6 +376,7 @@ public final class RepeatedArgument<T>: Argument {
                paramIdent: paramIdent,
                description: description,
                repeated: true,
+               greedy: greedy,
                handler: { x in })
     self.setHandler(parse: parse, set: { [unowned self] value in
       guard self.value.count < self.maxCount else {
@@ -356,18 +390,20 @@ public final class RepeatedArgument<T>: Argument {
 extension RepeatedArgument where T: ConvertibleFromString {
   
   /// Initializes a repeated argument from the given short name, long name, and description.
-  /// `maxCount` determines how many parameters are acceptable. The default parsing function
-  /// is used.
+  /// `maxCount` determines how many parameters are acceptable. If `greedy` is false, every
+  /// occurrence of the flag takes exactly one parameter. The default parsing function is used.
   public convenience init(shortName: Character?,
                           longName: String?,
                           paramIdent: String? = nil,
                           description: String,
-                          maxCount: Int = Int.max) {
+                          maxCount: Int = Int.max,
+                          greedy: Bool = true) {
     self.init(shortName: shortName,
               longName: longName,
               paramIdent: paramIdent,
               description: description,
               maxCount: maxCount,
+              greedy: greedy,
               parse: T.from)
   }
 }

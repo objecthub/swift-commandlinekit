@@ -171,7 +171,10 @@ public class CommandArgument<Value>: CommandFlag<Value, SingletonArgument<Value>
 @propertyWrapper
 public class CommandArguments<Value>: CommandFlag<Int, RepeatedArgument<Value>>, FlagWrapper
                                       where Value: ConvertibleFromString {
-  
+
+  /// If false, every occurrence of the flag takes exactly one parameter
+  public let greedy: Bool
+
   public var wrappedValue: [Value] {
     get {
       guard case .flag(let flag) = self.state else {
@@ -180,11 +183,13 @@ public class CommandArguments<Value>: CommandFlag<Int, RepeatedArgument<Value>>,
       return flag.value
     }
   }
-  
+
   public init(short: Character? = nil,
               long: String? = nil,
               description: String? = nil,
-              maxCount: Int = Int.max) {
+              maxCount: Int = Int.max,
+              greedy: Bool = true) {
+    self.greedy = greedy
     super.init(short: short, long: long, description: description, value: maxCount)
   }
   
@@ -199,7 +204,8 @@ public class CommandArguments<Value>: CommandFlag<Int, RepeatedArgument<Value>>,
     let flag = RepeatedArgument<Value>(shortName: short,
                                        longName: longName,
                                        description: descr,
-                                       maxCount: value)
+                                       maxCount: value,
+                                       greedy: self.greedy)
     flags.register(flag)
     self.state = .flag(flag)
   }

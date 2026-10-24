@@ -72,8 +72,18 @@ An argument is a parameterized flag. The parameters follow directly the flag ide
 a space). For instance, an integer argument with long name "size" could be defined as: `--size 64`. If the
 argument is repeated, then multiple parameters may follow the flag identifier, as in this
 example: `--size 2 4 8 16`. The sequence is terminated by either the end of the command-line arguments,
-another flag, or the terminator "---". All command-line arguments following the terminator are not being parsed
-and are returned in the `parameters` field of the `Flags` object.
+another flag, or one of the two terminators "--" and "---". The terminator "---" ends the parsing of flags: all
+command-line arguments following it are not being parsed and are returned in the `parameters` field of the
+`Flags` object. The terminator "--" only ends the parameters of the repeated argument it follows; flags after it
+are parsed as usual and other arguments are returned in `parameters`. Thus, it can be used with multiple repeated
+arguments, as in `--size 2 4 8 -- --name a b -- file.txt`. (A "--" that does not follow a repeated argument is ignored.)
+
+Such _greedy_ arguments consume every argument up to the next flag. This includes arguments that are meant
+to be parameters of the tool, like a file name in `tool --path dir1 dir2 file.txt`. They can be protected with
+the terminator "--", as in `tool --path dir1 dir2 -- file.txt`. Alternatively, a repeated argument is declared with
+`greedy: false` (e.g. `flags.strings("p", "path", description: "...", greedy: false)`). Then each
+occurrence of the flag takes exactly one value and several values are provided by repeating the flag, as in
+`tool --path dir1 --path dir2 file.txt`. Here, `file.txt` remains a parameter of the tool.
 
 ### Programmatic API
 

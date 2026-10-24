@@ -46,7 +46,14 @@ public class Flags {
   /// Terminator for command-line parsing. All following arguments are considered global
   /// parameters.
   internal static let terminator = "---"
-  
+
+  /// Terminator for the parameters of a repeated argument. In contrast to `terminator`, it does
+  /// not affect how the remaining command-line arguments are parsed: flags following it are
+  /// parsed as usual and other arguments are global parameters. This makes it possible to use
+  /// it with multiple greedy repeated arguments, as in `-f a b -- -l c d -- program`. It is
+  /// ignored if it does not follow a repeated argument.
+  internal static let argumentTerminator = "--"
+
   /// Prefix for long flag names (consisting of multiple characters).
   internal static let longNamePrefix = "--"
   
@@ -100,6 +107,9 @@ public class Flags {
           self.parameters.append(self.arguments[i])
           i += 1
         }
+      } else if arg == Flags.argumentTerminator {
+        // Parameters of repeated arguments are terminated by their flag; nothing to do here
+        continue
       } else if arg.hasPrefix(Flags.longNamePrefix) {
         let len = Flags.longNamePrefix.count
         // let longName = arg.substring(from: arg.index(arg.startIndex, offsetBy: len))
@@ -190,18 +200,21 @@ public class Flags {
   
   /// Registers a new argument of type `T` for the given short flag name, long flag name, and
   /// description. `repeated` needs to be set to true if the argument is allowed to have multiple
-  /// parameters. Function `set` is used to persist the parsed values of type `T`.
+  /// parameters. If `greedy` is false, every occurrence of a repeated argument takes exactly
+  /// one parameter. Function `set` is used to persist the parsed values of type `T`.
   public func argument<T: ConvertibleFromString>(_ shortName: Character?,
                                                  _ longName: String? = nil,
                                                  paramIdent: String? = nil,
                                                  description: String,
                                                  repeated: Bool = false,
+                                                 greedy: Bool = true,
                                                  set: @escaping (T) -> Void) -> Argument {
     let flag = Argument(shortName: shortName,
                         longName: longName,
                         paramIdent: paramIdent,
                         description: description,
                         repeated: repeated,
+                        greedy: greedy,
                         set: set)
     self.register(flag)
     return flag
@@ -225,16 +238,20 @@ public class Flags {
   
   /// Registers a new repeated argument of type `T` for the given short flag name, long flag
   /// name, and description. `maxCount` determines how many parameters are accepted at most.
+  /// If `greedy` is false, every occurrence of the flag takes exactly one parameter, so that
+  /// parameters following the flag are not consumed by it.
   public func arguments<T: ConvertibleFromString>(_ shortName: Character?,
                                                   _ longName: String? = nil,
                                                   paramIdent: String? = nil,
                                                   description: String,
-                                                  maxCount: Int = Int.max) -> RepeatedArgument<T> {
+                                                  maxCount: Int = Int.max,
+                                                  greedy: Bool = true) -> RepeatedArgument<T> {
     let flag = RepeatedArgument<T>(shortName: shortName,
                                    longName: longName,
                                    paramIdent: paramIdent,
                                    description: description,
-                                   maxCount: maxCount)
+                                   maxCount: maxCount,
+                                   greedy: greedy)
     self.register(flag)
     return flag
   }
@@ -242,7 +259,7 @@ public class Flags {
   /// Returns a human readable usage description text that can be printed for helping users
   /// better understand the available flags.
   public func usageDescription(usageName: String = "USAGE:",
-                               synopsis: String = "[<option> ...] [--] [<arg> ...]",
+                               synopsis: String = "[<option> ...] [---] [<arg> ...]",
                                usageStyle: TextProperties = TextProperties.empty,
                                optionsName: String = "OPTIONS:",
                                flagStyle: TextProperties = TextProperties.empty,
@@ -333,51 +350,59 @@ extension Flags {
                       _ longName: String? = nil,
                       paramIdent: String? = nil,
                       description: String,
-                      maxCount: Int = Int.max) -> RepeatedArgument<String> {
+                      maxCount: Int = Int.max,
+                      greedy: Bool = true) -> RepeatedArgument<String> {
     return self.arguments(shortName,
                           longName,
                           paramIdent: paramIdent,
                           description: description,
-                          maxCount: maxCount)
+                          maxCount: maxCount,
+                          greedy: greedy)
   }
-  
+
   public func enums<T: RawRepresentable>(_ shortName: Character?,
                                          _ longName: String? = nil,
                                          paramIdent: String? = nil,
                                          description: String,
-                                         maxCount: Int = Int.max) -> RepeatedArgument<T>
+                                         maxCount: Int = Int.max,
+                                         greedy: Bool = true) -> RepeatedArgument<T>
                    where T.RawValue: ConvertibleFromString {
       let flag = RepeatedArgument<T>(shortName: shortName,
                                      longName: longName,
                                      paramIdent: paramIdent,
                                      description: description,
                                      maxCount: maxCount,
+                                     greedy: greedy,
                                      parse: T.from)
       self.register(flag)
       return flag
   }
-  
+
   public func ints(_ shortName: Character?,
                    _ longName: String? = nil,
                    paramIdent: String? = nil,
                    description: String,
-                   maxCount: Int = Int.max) -> RepeatedArgument<Int> {
+                   maxCount: Int = Int.max,
+                   greedy: Bool = true) -> RepeatedArgument<Int> {
     return self.arguments(shortName,
                           longName,
                           paramIdent: paramIdent,
                           description: description,
-                          maxCount: maxCount)
+                          maxCount: maxCount,
+                          greedy: greedy)
   }
-  
+
   public func doubles(_ shortName: Character?,
                       _ longName: String? = nil,
                       paramIdent: String? = nil,
                       description: String,
-                      maxCount: Int = Int.max) -> RepeatedArgument<Double> {
+                      maxCount: Int = Int.max,
+                      greedy: Bool = true) -> RepeatedArgument<Double> {
     return self.arguments(shortName,
                           longName,
                           paramIdent: paramIdent,
                           description: description,
-                          maxCount: maxCount)
+                          maxCount: maxCount,
+                          greedy: greedy)
   }
 }
