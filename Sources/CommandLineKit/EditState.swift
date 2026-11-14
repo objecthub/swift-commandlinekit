@@ -38,6 +38,10 @@ import Foundation
 
 internal class EditState {
   let prompt: String
+  /// The prompt without ANSI escape sequences, i.e. the part that is visible on the terminal.
+  let visiblePrompt: String
+  /// The number of terminal columns used by the prompt.
+  let promptWidth: Int
   let promptProperties: TextProperties
   let readProperties: TextProperties
   let parenProperties: TextProperties
@@ -51,6 +55,8 @@ internal class EditState {
        readProperties: TextProperties = TextProperties.empty,
        parenProperties: TextProperties = TextProperties.empty) {
     self.prompt = prompt
+    self.visiblePrompt = AnsiCodes.stripEscapeSequences(prompt)
+    self.promptWidth = self.visiblePrompt.terminalDisplayWidth
     self.promptProperties = promptProperties
     self.readProperties = readProperties
     self.parenProperties = parenProperties
@@ -59,10 +65,47 @@ internal class EditState {
     self.location = buffer.endIndex
   }
   
+  /// The number of terminal columns used by the prompt and the text before the cursor.
   var cursorWidth: Int {
-    return self.cursorPosition + self.prompt.count
+    return self.promptWidth + String(self.buffer[..<self.location]).terminalDisplayWidth
   }
-  
+
+  /// The number of terminal columns used by the prompt and the whole buffer.
+  var lineWidth: Int {
+    return self.promptWidth + self.buffer.terminalDisplayWidth
+  }
+
+  /// Returns the row and column of the cursor relative to the beginning of the prompt for a
+  /// terminal with `columns` columns. Like terminals, this wraps a wide character which does
+  /// not fit into the remainder of a row to the next row.
+  func cursorRowAndColumn(columns: Int) -> (row: Int, column: Int) {
+    guard columns > 0 else {
+      return (0, self.cursorWidth)
+    }
+    var row = 0
+    var column = 0
+    func advance(_ text: Substring) {
+      for char in text {
+        let width = String(char).terminalDisplayWidth
+        guard width > 0 else {
+          continue
+        }
+        if column + width > columns {
+          row += 1
+          column = 0
+        }
+        column += width
+        if column >= columns {
+          row += 1
+          column = 0
+        }
+      }
+    }
+    advance(Substring(self.visiblePrompt))
+    advance(self.buffer[..<self.location])
+    return (row, column)
+  }
+
   var cursorPosition: Int {
     return self.buffer.distance(from: self.buffer.startIndex, to: self.location)
   }

@@ -176,6 +176,110 @@ class EditStateTests: XCTestCase {
     XCTAssertEqual(s.location, s.buffer.index(s.buffer.startIndex, offsetBy: 2))
   }
   
+  func testCursorWidthAscii() {
+    let s = EditState(prompt: "> ")
+    XCTAssertEqual(s.promptWidth, 2)
+    XCTAssertEqual(s.cursorWidth, 2)
+    s.buffer = "Hello"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorWidth, 7)
+    XCTAssertEqual(s.lineWidth, 7)
+    s.location = s.buffer.index(s.buffer.startIndex, offsetBy: 2)
+    XCTAssertEqual(s.cursorWidth, 4)
+    XCTAssertEqual(s.lineWidth, 7)
+  }
+  
+  func testCursorWidthWideCharacters() {
+    let s = EditState(prompt: "> ")
+    s.buffer = "日本語ab"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorPosition, 5)
+    XCTAssertEqual(s.cursorWidth, 10)
+    XCTAssertEqual(s.lineWidth, 10)
+    s.location = s.buffer.index(s.buffer.startIndex, offsetBy: 2)
+    XCTAssertEqual(s.cursorPosition, 2)
+    XCTAssertEqual(s.cursorWidth, 6)
+    XCTAssertTrue(s.moveLeft())
+    XCTAssertEqual(s.cursorWidth, 4)
+  }
+  
+  func testCursorWidthZeroWidthCharacters() {
+    let s = EditState(prompt: "")
+    // "e" followed by a combining acute accent, "x" followed by a zero-width space
+    s.buffer = "ae\u{0301}x\u{200B}y"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorWidth, 4)
+    s.location = s.buffer.startIndex
+    XCTAssertTrue(s.moveRight())
+    XCTAssertTrue(s.moveRight())
+    XCTAssertEqual(s.cursorWidth, 2)
+  }
+  
+  func testPromptWidthIgnoresEscapeSequences() {
+    let styled = TextProperties(.red, nil, .bold).apply(to: "λ> ")
+    XCTAssertNotEqual(styled.count, 3)
+    let s = EditState(prompt: styled)
+    XCTAssertEqual(s.visiblePrompt, "λ> ")
+    XCTAssertEqual(s.promptWidth, 3)
+    s.buffer = "ab"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorWidth, 5)
+    let wide = EditState(prompt: "\u{1B}[1;32m入力\u{1B}[0m: ")
+    XCTAssertEqual(wide.promptWidth, 6)
+  }
+  
+  func testStripEscapeSequences() {
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("plain"), "plain")
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("\u{1B}[31;1mred\u{1B}[0m"), "red")
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("a\u{1B}[38;5;208mb\u{1B}[mc"), "abc")
+    // OSC hyperlink terminated by ST and by BEL
+    XCTAssertEqual(
+      AnsiCodes.stripEscapeSequences("\u{1B}]8;;http://x\u{1B}\\link\u{1B}]8;;\u{1B}\\!"), "link!")
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("\u{1B}]0;title\u{07}> "), "> ")
+    // Two-character escape sequences and character set designation
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("\u{1B}7x\u{1B}8\u{1B}(By"), "xy")
+    // C1 control sequence introducer
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("\u{9B}1mz"), "z")
+    // Trailing incomplete sequences
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("q\u{1B}"), "q")
+    XCTAssertEqual(AnsiCodes.stripEscapeSequences("q\u{1B}[12"), "q")
+  }
+  
+  func testCursorRowAndColumn() {
+    let s = EditState(prompt: "> ")
+    s.buffer = "abcdefgh"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 80).row, 0)
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 80).column, 10)
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 10).row, 1)
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 10).column, 0)
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 4).row, 2)
+    XCTAssertEqual(s.cursorRowAndColumn(columns: 4).column, 2)
+  }
+  
+  func testCursorRowAndColumnWrapsWideCharacters() {
+    let s = EditState(prompt: "> ")
+    // The third wide character does not fit into the last column of the first row,
+    // so the terminal wraps it to the next row
+    s.buffer = "ab日本語"
+    s.location = s.buffer.endIndex
+    XCTAssertEqual(s.cursorWidth, 10)
+    let pos = s.cursorRowAndColumn(columns: 9)
+    XCTAssertEqual(pos.row, 1)
+    XCTAssertEqual(pos.column, 2)
+    s.location = s.buffer.index(before: s.buffer.endIndex)
+    let pos2 = s.cursorRowAndColumn(columns: 9)
+    XCTAssertEqual(pos2.row, 0)
+    XCTAssertEqual(pos2.column, 8)
+    // Wide characters in the prompt
+    let t = EditState(prompt: "入力: ")
+    t.buffer = "x"
+    t.location = t.buffer.endIndex
+    let pos3 = t.cursorRowAndColumn(columns: 3)
+    XCTAssertEqual(pos3.row, 2)
+    XCTAssertEqual(pos3.column, 2)
+  }
+  
   static let allTests = [
     ("testInitEmptyBuffer", testInitEmptyBuffer),
     ("testInsertCharacter", testInsertCharacter),
@@ -189,5 +293,12 @@ class EditStateTests: XCTestCase {
     ("testDeleteCharacter", testDeleteCharacter),
     ("testEraseCharacterRight", testEraseCharacterRight),
     ("testSwapCharacters", testSwapCharacters),
+    ("testCursorWidthAscii", testCursorWidthAscii),
+    ("testCursorWidthWideCharacters", testCursorWidthWideCharacters),
+    ("testCursorWidthZeroWidthCharacters", testCursorWidthZeroWidthCharacters),
+    ("testPromptWidthIgnoresEscapeSequences", testPromptWidthIgnoresEscapeSequences),
+    ("testStripEscapeSequences", testStripEscapeSequences),
+    ("testCursorRowAndColumn", testCursorRowAndColumn),
+    ("testCursorRowAndColumnWrapsWideCharacters", testCursorRowAndColumnWrapsWideCharacters),
   ]
 }

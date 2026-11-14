@@ -1,5 +1,14 @@
 # Changelog
 
+# Unreleased
+- `LineReader` positions the cursor based on terminal column widths instead of character counts:
+  wide characters (e.g. CJK, emoji) count as two columns and zero-width characters (e.g.
+  combining marks) as none, both in the input and the prompt. A wide character which does not
+  fit into the remainder of a row is wrapped to the next row, as terminals do
+- ANSI escape sequences contained in the prompt passed to `LineReader.readLine` (e.g. colors
+  and text styles) no longer count towards the width of the prompt
+- Hints are hidden based on the display width of the prompt, input, and hint
+
 # 1.1.3 (2026-10-24)
 - Repeated arguments can be declared with `greedy: false`. Every occurrence of such a flag takes
   exactly one parameter and multiple parameters are provided by repeating the flag, e.g.

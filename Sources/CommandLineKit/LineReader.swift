@@ -514,10 +514,7 @@ public class LineReader {
     if editState.requiresMatching() {
       try self.refreshLine(editState: editState)
     } else {
-      let cursorWidth = editState.cursorWidth
-      let numColumns = self.numColumns
-      let cursorRows = cursorWidth / numColumns
-      let cursorCols = cursorWidth % numColumns
+      let (cursorRows, cursorCols) = editState.cursorRowAndColumn(columns: self.numColumns)
       var commandBuf = AnsiCodes.beginningOfLine
       commandBuf += AnsiCodes.cursorDown(cursorRows)
       commandBuf += AnsiCodes.cursorForward(cursorCols)
@@ -526,10 +523,7 @@ public class LineReader {
   }
 
   private func refreshLine(editState: EditState, decorate: Bool = true) throws {
-    let cursorWidth = editState.cursorWidth
-    let numColumns = self.numColumns
-    let cursorRows = cursorWidth / numColumns
-    let cursorCols = cursorWidth % numColumns
+    let (cursorRows, cursorCols) = editState.cursorRowAndColumn(columns: self.numColumns)
     var commandBuf = AnsiCodes.beginningOfLine +
                      editState.promptProperties.apply(to: editState.prompt)
     if decorate, let idx = editState.matchingParen() {
@@ -684,8 +678,8 @@ public class LineReader {
           let (hint, properties) = hintsCallback(editState.buffer) else {
       return ""
     }
-    let currentLineLength = editState.prompt.count + editState.buffer.count
-    if hint.count + currentLineLength > self.numColumns {
+    let hintWidth = AnsiCodes.stripEscapeSequences(hint).terminalDisplayWidth
+    if hintWidth + editState.lineWidth > self.numColumns {
       return ""
     } else {
       return properties.apply(to: hint) + AnsiCodes.origTermColor
