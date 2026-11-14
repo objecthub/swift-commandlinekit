@@ -154,4 +154,78 @@ public struct AnsiCodes {
   public static func termColor256(color: Int) -> String {
     return escapeCode("38;5;\(color)m")
   }
+
+  /// Returns `text` without ANSI escape sequences, i.e. only the text that is visible when
+  /// `text` is written to a terminal. This removes CSI sequences (e.g. SGR codes for colors
+  /// and text styles), string sequences such as OSC (e.g. hyperlinks and window titles),
+  /// DCS, SOS, PM, and APC, as well as other two-character escape sequences.
+  internal static func stripEscapeSequences(_ text: String) -> String {
+    let scalars = text.unicodeScalars
+    guard scalars.contains(where: { $0 == "\u{1B}" || $0 == "\u{9B}" || $0 == "\u{9D}" }) else {
+      return text
+    }
+    var result = String.UnicodeScalarView()
+    var i = scalars.startIndex
+    // Skips a CSI sequence starting at `i` (after the introducer)
+    func skipControlSequence() {
+      while i < scalars.endIndex {
+        let value = scalars[i].value
+        i = scalars.index(after: i)
+        if value >= 0x40 && value <= 0x7E {
+          return
+        } else if value < 0x20 || value > 0x3F {
+          // Malformed sequence; stop skipping without consuming more characters
+          return
+        }
+      }
+    }
+    // Skips a string sequence starting at `i` (after the introducer) up to and including
+    // its terminator (BEL, ST, or ESC \)
+    func skipStringSequence() {
+      while i < scalars.endIndex {
+        let scalar = scalars[i]
+        i = scalars.index(after: i)
+        if scalar == "\u{07}" || scalar == "\u{9C}" {
+          return
+        } else if scalar == "\u{1B}" {
+          if i < scalars.endIndex && scalars[i] == "\\" {
+            i = scalars.index(after: i)
+          }
+          return
+        }
+      }
+    }
+    while i < scalars.endIndex {
+      let scalar = scalars[i]
+      i = scalars.index(after: i)
+      switch scalar {
+        case "\u{9B}":
+          skipControlSequence()
+        case "\u{9D}":
+          skipStringSequence()
+        case "\u{1B}":
+          guard i < scalars.endIndex else {
+            break
+          }
+          let next = scalars[i]
+          i = scalars.index(after: i)
+          switch next {
+            case "[":
+              skipControlSequence()
+            case "]", "P", "X", "^", "_":
+              skipStringSequence()
+            default:
+              // Two-character escape sequence, possibly with intermediate bytes
+              var value = next.value
+              while value >= 0x20 && value <= 0x2F && i < scalars.endIndex {
+                value = scalars[i].value
+                i = scalars.index(after: i)
+              }
+          }
+        default:
+          result.append(scalar)
+      }
+    }
+    return String(result)
+  }
 }

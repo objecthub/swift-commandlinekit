@@ -33,60 +33,119 @@
 
 extension String {
 
-  /// Returns the width (in characters) when displayed on a terminal.
+  /// Returns the number of columns this string occupies when displayed on a monospaced
+  /// terminal. This is the sum of the `terminalDisplayWidth` of all characters (i.e. grapheme
+  /// clusters) of the string. Control characters (including newlines and tabs) do not
+  /// contribute to the width.
   public var terminalDisplayWidth: Int {
-    self.unicodeScalars.reduce(0) { $0 + self.scalarDisplayWidth($1) }
+    var width = 0
+    for ch in self {
+      width += ch.terminalDisplayWidth
+    }
+    return width
   }
-  
-  private func scalarDisplayWidth(_ scalar: Unicode.Scalar) -> Int {
-    let value = scalar.value
-    // Null character
-    if value == 0 {
+}
+
+extension Character {
+
+  /// Returns the number of columns this character (i.e. extended grapheme cluster) occupies
+  /// when displayed on a monospaced terminal. The width is derived from the widths of the
+  /// Unicode scalars of the grapheme cluster (see `Unicode.Scalar.terminalDisplayWidth`):
+  ///
+  ///   - If the first scalar is wide (e.g. an ideograph, a Hangul syllable or an emoji with
+  ///     default emoji presentation), the character has width 2. This covers emoji ZWJ
+  ///     sequences, emoji modifier sequences (skin tones), emoji tag sequences, and
+  ///     conjoining Hangul jamo sequences.
+  ///   - If the first scalar has width 1 and it is followed by the emoji presentation
+  ///     selector U+FE0F, the character has width 2 (e.g. ❤️ or keycaps like 1️⃣).
+  ///   - Otherwise, the width is the sum of the widths of all scalars. Combining marks and
+  ///     format characters have width 0, so a base character with combining accents has
+  ///     width 1, and a pair of regional indicators (a flag) has width 2.
+  ///
+  /// Control characters (C0 and C1 controls, including newlines and tabs) have width 0.
+  public var terminalDisplayWidth: Int {
+    if let ascii = self.asciiValue {
+      return ascii >= 0x20 && ascii < 0x7F ? 1 : 0
+    }
+    var iterator = self.unicodeScalars.makeIterator()
+    guard let base = iterator.next() else {
       return 0
     }
-    // Combining/non-spacing marks and other zero-width characters
-    if value == 0x200B { // Zero-width space
-      return 0
-    }
-    if value == 0xFEFF { // Zero-width no-break space / BOM
-      return 0
-    }
-    // Variation selectors (emoji/text presentation modifiers, always zero-width)
-    if (value >= 0xFE00 && value <= 0xFE0F) { // Variation Selectors 1–16
-      return 0
-    }
-    if (value >= 0xE0100 && value <= 0xE01EF) { // Variation Selectors Supplement
-      return 0
-    }
-    // Skip combining characters (they modify the previous character)
-    let ch = Character(scalar)
-    if ch.unicodeScalars.allSatisfy({ isCombining($0) }) {
-      return 0
-    }
-    // Control characters
-    if value < 32 || (value >= 0x7F && value < 0xA0) {
-      return 0
-    }
-    // Check for wide character ranges (double-width)
-    if Terminal.isWideCharacter(value) {
+    let baseWidth = base.terminalDisplayWidth
+    if baseWidth == 2 {
       return 2
     }
-    return 1
+    var width = baseWidth
+    while let scalar = iterator.next() {
+      if scalar.value == 0xFE0F && baseWidth == 1 {
+        return 2
+      }
+      width += scalar.terminalDisplayWidth
+    }
+    return width
   }
-  
-  private func isCombining(_ scalar: Unicode.Scalar) -> Bool {
-    let value = scalar.value
-    return (
-      // Combining Diacritical Marks
-      (value >= 0x0300 && value <= 0x036F) ||
-      // Combining Diacritical Marks Extended
-      (value >= 0x1AB0 && value <= 0x1AFF) ||
-      // Combining Diacritical Marks Supplement
-      (value >= 0x1DC0 && value <= 0x1DFF) ||
-      // Combining Diacritical Marks for Symbols
-      (value >= 0x20D0 && value <= 0x20FF) ||
-      // Variation selectors
-      (value >= 0xFE20 && value <= 0xFE2F)
-    )
+}
+
+extension Unicode.Scalar {
+
+  /// Returns the number of columns this Unicode scalar occupies when displayed on a
+  /// monospaced terminal independent of its context: 0, 1, or 2. The width is derived
+  /// from the Unicode Character Database (see `Unicode.Scalar.terminalWidthUnicodeVersion`
+  /// for the version):
+  ///
+  ///   - Width 0: control characters (C0 and C1 controls, including newlines and tabs),
+  ///     nonspacing and enclosing combining marks (general categories Mn and Me, e.g.
+  ///     U+0301, Hebrew points, Arabic harakat, variation selectors), format characters
+  ///     (general category Cf, e.g. U+200B, ZWNJ, ZWJ, direction marks and isolates,
+  ///     U+FEFF), line and paragraph separators, Hangul Jungseong and Jongseong, and
+  ///     unassigned default ignorable code points. U+00AD SOFT HYPHEN and the prepended
+  ///     concatenation marks (e.g. U+0600) are visible and have width 1.
+  ///   - Width 2: characters with East Asian Width W (wide) or F (fullwidth), which includes
+  ///     all characters with default emoji presentation (e.g. U+231A, U+2614, U+1F600),
+  ///     as well as unassigned code points in blocks reserved for wide characters (e.g.
+  ///     CJK blocks, planes 2 and 3, and emoji blocks).
+  ///   - Width 1: all other scalars, including characters with East Asian Width A
+  ///     (ambiguous) and emoji with default text presentation (e.g. U+2600, U+2764).
+  public var terminalDisplayWidth: Int {
+    let value = self.value
+    if value >= 0x20 && value < 0x7F {
+      return 1
+    } else if TerminalWidthTables.contains(value, in: TerminalWidthTables.zeroWidth) {
+      return 0
+    } else if TerminalWidthTables.contains(value, in: TerminalWidthTables.wide) {
+      return 2
+    } else {
+      return 1
+    }
+  }
+
+  /// The version of the Unicode Character Database from which `terminalDisplayWidth`
+  /// is derived.
+  public static var terminalWidthUnicodeVersion: String {
+    return TerminalWidthTables.unicodeVersion
+  }
+}
+
+extension TerminalWidthTables {
+
+  /// Returns true if `value` is contained in one of the ranges of `table`. `table` is a
+  /// sorted array of non-overlapping ranges, each represented by its first and last value.
+  static func contains(_ value: UInt32, in table: [UInt32]) -> Bool {
+    guard table.count >= 2, value >= table[0], value <= table[table.count - 1] else {
+      return false
+    }
+    var lo = 0
+    var hi = table.count / 2 - 1
+    while lo <= hi {
+      let mid = (lo + hi) / 2
+      if value < table[2 * mid] {
+        hi = mid - 1
+      } else if value > table[2 * mid + 1] {
+        lo = mid + 1
+      } else {
+        return true
+      }
+    }
+    return false
   }
 }

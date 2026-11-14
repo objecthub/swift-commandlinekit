@@ -42,6 +42,7 @@ XCTMain(
     testCase(LineReaderHistoryTests.allTests),
     testCase(EditStateTests.allTests),
     testCase(AnsiCodesTests.allTests),
+    testCase(TerminalWidthTests.allTests),
   ]
 )
 

@@ -110,21 +110,15 @@ public struct Terminal {
       return (scalar, bytes)
     }
     
-    // Number of terminal columns a scalar occupies (0, 1, or 2).
-    func terminalWidth(of scalar: Unicode.Scalar) -> Int {
+    // Every entered character is displayed as one `replacementChar`, independent of the
+    // width of the entered character. This is the number of terminal columns occupied by
+    // `replacementChar`; it is needed for moving the cursor across replacement characters.
+    let replacementWidth = replacementChar.terminalDisplayWidth
+    
+    // Control characters which are not handled explicitly are ignored.
+    func isControlCharacter(_ scalar: Unicode.Scalar) -> Bool {
       let v = scalar.value
-      // Zero-width: combining marks, variation selectors, zero-width spaces, etc.
-      if v == 0 {
-        return 0
-      }
-      if v < 32 || (v >= 0x7F && v < 0xA0) { // C0/C1 control chars
-        return 0                             // Full-width / wide characters (East Asian wide)
-      }
-      if Terminal.isWideCharacter(v) {
-        return 2
-      } else {
-        return 1
-      }
+      return v < 0x20 || (v >= 0x7F && v < 0xA0) // C0/C1 control chars
     }
     
     // Reads after ESC. Returns a tag indicating what was found.
@@ -184,39 +178,37 @@ public struct Terminal {
       fflush(stdout)
     }
 
-    // Redraws all '*' from `cursorIndex` to end, then repositions cursor.
-    // Called after any insertion or deletion in the middle of the string.
-    func redrawFromCursor(clusterWidths: [Int], cursorIndex: Int, eraseTrailing: Bool = false) {
-      // On insert: suffix grew by 1, print suffixCount+1 stars, move back suffixCount
-      // On delete: suffix shrank by 1, print suffixCount stars + 1 space, move back suffixCount+1
-      let suffixCount = clusterWidths.count - cursorIndex
+    // Redraws all replacement characters from `cursorIndex` to the end, then repositions
+    // the cursor. Called after any insertion or deletion in the middle of the input.
+    func redrawFromCursor(count: Int, cursorIndex: Int, eraseTrailing: Bool = false) {
+      let suffixCount = count - cursorIndex
       if eraseTrailing {
-        // Deletion: overwrite old stars with new (fewer) stars, blank the last one
+        // Deletion: overwrite old replacement characters with new (fewer) ones, blank the last
         print(String(repeating: replacementChar, count: suffixCount), terminator: "")
-        print(" ", terminator: "")
+        print(String(repeating: " ", count: replacementWidth), terminator: "")
         fflush(stdout)
-        cursorLeft(suffixCount + 1)
+        cursorLeft((suffixCount + 1) * replacementWidth)
       } else {
-        // Insertion: overwrite old stars and add one new one at the end
+        // Insertion: overwrite old replacement characters and add a new one at the end
         print(String(repeating: replacementChar, count: suffixCount + 1), terminator: "")
         fflush(stdout)
-        cursorLeft(suffixCount)
+        cursorLeft(suffixCount * replacementWidth)
       }
     }
     
-    // Each element corresponds to one grapheme cluster (character typed by user).
-    var clusterBytes:  [[UInt8]] = []   // raw UTF-8 bytes per cluster
-    var clusterWidths: [Int]     = []   // terminal column width per cluster
-    var cursorIndex: Int = 0            // insertion point (0 = before first char)
+    // Each element corresponds to one character (grapheme cluster) entered by the user.
+    // Each character is displayed as a single `replacementChar`.
+    var characters: [String] = []
+    var cursorIndex: Int = 0            // insertion point (0 = before first character)
     
     while true {
-      guard let (scalar, bytes) = readUnicodeScalar() else {
+      guard let (scalar, _) = readUnicodeScalar() else {
         break
       }
       switch scalar.value {
         // Enter/Return
         case 10, 13:
-          if !allowEmpty && clusterBytes.isEmpty {
+          if !allowEmpty && characters.isEmpty {
             print("\u{07}", terminator: "")  // BEL — signal that empty is not allowed
             fflush(stdout)
             continue
@@ -224,17 +216,15 @@ public struct Terminal {
         // Ctrl+A — jump to beginning
         case 0x01:
           if cursorIndex > 0 {
-            let cols = clusterWidths[..<cursorIndex].reduce(0, +)
-            cursorLeft(cols)
+            cursorLeft(cursorIndex * replacementWidth)
             cursorIndex = 0
           }
           continue
         // Ctrl+E — jump to end
         case 0x05:
-          if cursorIndex < clusterWidths.count {
-            let cols = clusterWidths[cursorIndex...].reduce(0, +)
-            cursorRight(cols)
-            cursorIndex = clusterWidths.count
+          if cursorIndex < characters.count {
+            cursorRight((characters.count - cursorIndex) * replacementWidth)
+            cursorIndex = characters.count
           }
           continue
         // ESC — start of arrow-key sequence
@@ -243,11 +233,11 @@ public struct Terminal {
             case .arrowLeft:
               if cursorIndex > 0 {
                 cursorIndex -= 1
-                cursorLeft(clusterWidths[cursorIndex])
+                cursorLeft(replacementWidth)
               }
             case .arrowRight:
-              if cursorIndex < clusterWidths.count {
-                cursorRight(clusterWidths[cursorIndex])
+              if cursorIndex < characters.count {
+                cursorRight(replacementWidth)
                 cursorIndex += 1
               }
             case .arrowUp, .arrowDown:
@@ -258,17 +248,15 @@ public struct Terminal {
               break
           }
           continue
-        // Backspace/DEL — delete character before cursor
+        // Backspace/DEL — delete the whole character before the cursor
         case 127, 8:
           guard cursorIndex > 0 else {
             continue
           }
           cursorIndex -= 1
-          let w = clusterWidths[cursorIndex]
-          clusterBytes.remove(at: cursorIndex)
-          clusterWidths.remove(at: cursorIndex)
-          cursorLeft(w)
-          redrawFromCursor(clusterWidths: clusterWidths, cursorIndex: cursorIndex, eraseTrailing: true)
+          characters.remove(at: cursorIndex)
+          cursorLeft(replacementWidth)
+          redrawFromCursor(count: characters.count, cursorIndex: cursorIndex, eraseTrailing: true)
           continue
         // Ctrl+C
         case 3:
@@ -276,46 +264,58 @@ public struct Terminal {
           throw LineReaderError.CTRLC
         // Ctrl+U — clear entire line
         case 21:
-          // Move cursor to start of input, erase all stars
-          let colsToStart = clusterWidths[..<cursorIndex].reduce(0, +)
-          cursorLeft(colsToStart)
-          let totalStars = clusterWidths.count
-          print(String(repeating: " ", count: totalStars), terminator: "")
-          cursorLeft(totalStars)
-          clusterBytes.removeAll()
-          clusterWidths.removeAll()
+          // Move cursor to start of input, erase all replacement characters
+          cursorLeft(cursorIndex * replacementWidth)
+          let totalCols = characters.count * replacementWidth
+          print(String(repeating: " ", count: totalCols), terminator: "")
+          cursorLeft(totalCols)
+          characters.removeAll()
           cursorIndex = 0
           fflush(stdout)
           continue
         // Printable character
         default:
-          let w = terminalWidth(of: scalar)
-          if w == 0 {             // skip zero-width / control scalars
-            continue              // Accumulate bytes until we have a full grapheme cluster.
-          }                       // For password input a single scalar per cluster is fine.
-                                  // Enforce maxLength if specified
-          if let max = maxLength, clusterWidths.count >= max {
+          if isControlCharacter(scalar) { // skip control scalars
+            continue
+          }
+          // A scalar which extends the character before the cursor (e.g. a combining mark,
+          // a variation selector, an emoji modifier, or a scalar joined via ZWJ) becomes part
+          // of that character; it does not get a replacement character of its own.
+          if cursorIndex > 0,
+             Terminal.extendsCharacter(characters[cursorIndex - 1], with: scalar) {
+            characters[cursorIndex - 1].unicodeScalars.append(scalar)
+            continue
+          }
+          // Enforce maxLength if specified
+          if let max = maxLength, characters.count >= max {
             print("\u{07}", terminator: "")  // BEL
             fflush(stdout)
             continue
           }
           // Insert at cursorIndex
-          clusterBytes.insert(bytes, at: cursorIndex)
-          clusterWidths.insert(w, at: cursorIndex)
+          characters.insert(String(scalar), at: cursorIndex)
           cursorIndex += 1
-          if cursorIndex == clusterWidths.count {
+          if cursorIndex == characters.count {
             // Cursor is at the end — simple append, no redraw needed
             print("\(replacementChar)", terminator: "")
             fflush(stdout)
           } else {
-            // Cursor is in the middle — redraw stars from insertion point
-            redrawFromCursor(clusterWidths: clusterWidths, cursorIndex: cursorIndex, eraseTrailing: false)
+            // Cursor is in the middle — redraw replacement characters from insertion point
+            redrawFromCursor(count: characters.count, cursorIndex: cursorIndex, eraseTrailing: false)
           }
           continue
       }
       break
     }
-    return String(bytes: clusterBytes.flatMap { $0 }, encoding: .utf8) ?? ""
+    return characters.joined()
+  }
+  
+  /// Returns true if appending `scalar` to `character` yields a single character, i.e. if
+  /// `scalar` extends the grapheme cluster `character`.
+  internal static func extendsCharacter(_ character: String, with scalar: Unicode.Scalar) -> Bool {
+    var extended = character
+    extended.unicodeScalars.append(scalar)
+    return extended.count == 1
   }
   
   /// Returns the current size of the terminal in terms of a tuple whose
@@ -438,43 +438,10 @@ public struct Terminal {
     return UInt8(closestIdx)
   }
   
+  /// Returns true if the Unicode scalar with the given value occupies two columns on a
+  /// terminal (see `Unicode.Scalar.terminalDisplayWidth`).
   internal static func isWideCharacter(_ value: UInt32) -> Bool {
-    switch value {
-      // CJK Unified Ideographs and common extensions
-      case
-        0x1100...0x115F,  // Hangul Jamo
-        0x2600...0x26FF,  // Miscellaneous Symbols (☀︎, ❤︎, etc.)
-        0x2700...0x27BF,  // Dingbats (✅, ✈, ✉, etc.)
-        0x2E80...0x303E,  // CJK Radicals, Kangxi, etc.
-        0x3041...0x33BF,  // Hiragana, Katakana, Bopomofo, Hangul Compat, Kanbun, etc.
-        0x33FF...0x33FF,  // CJK Compatibility
-        0x3400...0x4DBF,  // CJK Extension A
-        0x4E00...0x9FFF,  // CJK Unified Ideographs
-        0xA000...0xA4CF,  // Yi
-        0xA960...0xA97F,  // Hangul Jamo Extended-A
-        0xAC00...0xD7FF,  // Hangul Syllables and Jamo Extended-B
-        0xF900...0xFAFF,  // CJK Compatibility Ideographs
-        0xFE10...0xFE1F,  // Vertical Forms
-        0xFE30...0xFE6F,  // CJK Compatibility Forms, Small Form Variants
-        0xFF01...0xFF60,  // Fullwidth ASCII and punctuation
-        0xFFE0...0xFFE6,  // Fullwidth signs
-                          // Supplementary wide blocks
-        0x1B000...0x1B12F, // Kana Supplement/Extended
-        0x1F004...0x1F004, // Mahjong tile
-        0x1F0CF...0x1F0CF, // Playing card
-        0x1F200...0x1F251, // Enclosed CJK
-        0x1F300...0x1F6FF, // Misc symbols, emoticons, transport
-        0x1F900...0x1F9FF, // Supplemental symbols
-        0x1FA00...0x1FA6F, // Chess symbols
-        0x1FA70...0x1FAFF, // Symbols and pictographs extended-A
-        0x20000...0x2A6DF, // CJK Extension B
-        0x2A700...0x2CEAF, // CJK Extensions C, D, E
-        0x2CEB0...0x2EBEF, // CJK Extension F
-        0x2F800...0x2FA1F, // CJK Compatibility Supplement
-        0x30000...0x3134F: // CJK Extension G
-        return true
-      default:
-        return false
-    }
+    return TerminalWidthTables.contains(value, in: TerminalWidthTables.wide) &&
+           !TerminalWidthTables.contains(value, in: TerminalWidthTables.zeroWidth)
   }
 }

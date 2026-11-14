@@ -38,6 +38,10 @@ import Foundation
 
 internal class EditState {
   let prompt: String
+  /// The prompt without ANSI escape sequences, i.e. the part that is visible on the terminal.
+  let visiblePrompt: String
+  /// The number of terminal columns used by the prompt.
+  let promptWidth: Int
   let promptProperties: TextProperties
   let readProperties: TextProperties
   let parenProperties: TextProperties
@@ -51,6 +55,8 @@ internal class EditState {
        readProperties: TextProperties = TextProperties.empty,
        parenProperties: TextProperties = TextProperties.empty) {
     self.prompt = prompt
+    self.visiblePrompt = AnsiCodes.stripEscapeSequences(prompt)
+    self.promptWidth = self.visiblePrompt.terminalDisplayWidth
     self.promptProperties = promptProperties
     self.readProperties = readProperties
     self.parenProperties = parenProperties
@@ -59,10 +65,47 @@ internal class EditState {
     self.location = buffer.endIndex
   }
   
+  /// The number of terminal columns used by the prompt and the text before the cursor.
   var cursorWidth: Int {
-    return self.cursorPosition + self.prompt.count
+    return self.promptWidth + String(self.buffer[..<self.location]).terminalDisplayWidth
   }
-  
+
+  /// The number of terminal columns used by the prompt and the whole buffer.
+  var lineWidth: Int {
+    return self.promptWidth + self.buffer.terminalDisplayWidth
+  }
+
+  /// Returns the row and column of the cursor relative to the beginning of the prompt for a
+  /// terminal with `columns` columns. Like terminals, this wraps a wide character which does
+  /// not fit into the remainder of a row to the next row.
+  func cursorRowAndColumn(columns: Int) -> (row: Int, column: Int) {
+    guard columns > 0 else {
+      return (0, self.cursorWidth)
+    }
+    var row = 0
+    var column = 0
+    func advance(_ text: Substring) {
+      for char in text {
+        let width = String(char).terminalDisplayWidth
+        guard width > 0 else {
+          continue
+        }
+        if column + width > columns {
+          row += 1
+          column = 0
+        }
+        column += width
+        if column >= columns {
+          row += 1
+          column = 0
+        }
+      }
+    }
+    advance(Substring(self.visiblePrompt))
+    advance(self.buffer[..<self.location])
+    return (row, column)
+  }
+
   var cursorPosition: Int {
     return self.buffer.distance(from: self.buffer.startIndex, to: self.location)
   }
@@ -71,17 +114,30 @@ internal class EditState {
     return self.location == self.buffer.endIndex
   }
   
+  /// Returns the index of the character at character offset `offset` in the buffer. Offsets
+  /// beyond the end of the buffer are mapped to `buffer.endIndex`.
+  ///
+  /// Mutating `buffer` invalidates all its indices, including `location`. Mutating methods
+  /// therefore remember the character offset of the cursor and use this method to recompute
+  /// `location` after the mutation. Reusing a stale index may yield an index pointing into
+  /// the middle of a character (or beyond the end of the buffer).
+  private func index(atCharacterOffset offset: Int) -> String.Index {
+    return self.buffer.index(self.buffer.startIndex,
+                             offsetBy: Swift.max(0, offset),
+                             limitedBy: self.buffer.endIndex) ?? self.buffer.endIndex
+  }
+  
   func insertCharacter(_ char: Character) -> Bool {
     if let max = self.maxCount, self.buffer.count >= max {
       return false
     }
-    let origLoc = self.location
-    let origEnd = self.buffer.endIndex
-    self.buffer.insert(char, at: location)
-    self.location = self.buffer.index(after: location)
-    if origLoc == origEnd {
-      self.location = self.buffer.endIndex
-    }
+    // The inserted character may be combined with the preceding character (e.g. a combining
+    // mark, an emoji modifier, or a scalar following a ZWJ). Thus, the new cursor position is
+    // determined by counting the characters before the cursor including the new one.
+    var head = String(self.buffer[..<self.location])
+    head.append(char)
+    self.buffer.insert(char, at: self.location)
+    self.location = self.index(atCharacterOffset: head.count)
     return true
   }
   
@@ -89,22 +145,23 @@ internal class EditState {
     if let max = self.maxCount, newBuffer.count >= max {
       if truncateIfNeeded {
         self.buffer = String(newBuffer.prefix(max))
+        self.location = self.buffer.endIndex
         return true
       } else {
         return false
       }
     } else {
       self.buffer = newBuffer
+      self.location = self.buffer.endIndex
       return true
     }
   }
   
   func backspace() -> Bool {
     if self.location != self.buffer.startIndex {
-      if self.location != self.buffer.startIndex {
-        self.location = self.buffer.index(before: self.location)
-      }
-      self.buffer.remove(at: self.location)
+      let pos = self.cursorPosition - 1
+      self.buffer.remove(at: self.buffer.index(before: self.location))
+      self.location = self.index(atCharacterOffset: pos)
       return true
     } else {
       return false
@@ -151,7 +208,9 @@ internal class EditState {
     if self.location >= self.buffer.endIndex || self.buffer.isEmpty {
       return false
     } else {
+      let pos = self.cursorPosition
       self.buffer.remove(at: self.location)
+      self.location = self.index(atCharacterOffset: pos)
       return true
     }
   }
@@ -160,10 +219,9 @@ internal class EditState {
     if self.buffer.count == 0 || self.location >= self.buffer.endIndex {
       return false
     } else {
+      let pos = self.cursorPosition
       self.buffer.remove(at: self.location)
-      if self.location > self.buffer.endIndex {
-        self.location = self.buffer.endIndex
-      }
+      self.location = self.index(atCharacterOffset: pos)
       return true
     }
   }
@@ -183,7 +241,9 @@ internal class EditState {
     if self.buffer.distance(from: oldLocation, to: self.location) == 0 {
       return false
     } else {
+      let pos = self.cursorPosition
       self.buffer.removeSubrange(self.location..<oldLocation)
+      self.location = self.index(atCharacterOffset: pos)
       return true
     }
   }
@@ -220,41 +280,36 @@ internal class EditState {
     if self.location == self.buffer.endIndex || self.buffer.isEmpty {
       return false
     } else {
-      self.buffer.removeLast(self.buffer.count - self.cursorPosition)
+      self.buffer.removeSubrange(self.location...)
+      self.location = self.buffer.endIndex
       return true
     }
   }
   
   func swapCharacterWithPrevious() -> Bool {
-    if buffer.count < 2 {
-      return false
-    } else if self.location == self.buffer.endIndex {
-      // Swap the two previous characters if at end index
-      let temp = self.buffer.remove(at: self.buffer.index(self.location, offsetBy: -2))
-      self.buffer.insert(temp, at: self.buffer.endIndex)
-      self.location = self.buffer.endIndex
-      return true
-    } else if self.location > self.buffer.startIndex {
-      // If the characters are in the middle of the string, swap character under cursor with
-      // previous, then move the cursor to the right
-      let temp = self.buffer.remove(at: self.buffer.index(before: self.location))
-      self.buffer.insert(temp, at: self.location)
-      if self.location < self.buffer.endIndex {
-        self.location = buffer.index(after: self.location)
-      }
-      return true
-    } else if self.location == self.buffer.startIndex {
-      // If the character is at the start of the string, swap the first two characters, then
-      // put the cursor after them
-      let temp = self.buffer.remove(at: self.location)
-      self.buffer.insert(temp, at: self.buffer.index(after: self.location))
-      if self.location < self.buffer.endIndex {
-        self.location = self.buffer.index(self.buffer.startIndex, offsetBy: 2)
-      }
-      return true
-    } else {
+    var chars = Array(self.buffer)
+    guard chars.count >= 2 else {
       return false
     }
+    var pos = self.cursorPosition
+    if pos >= chars.count {
+      // Swap the two previous characters if at end index
+      chars.swapAt(chars.count - 2, chars.count - 1)
+      pos = chars.count
+    } else if pos > 0 {
+      // If the characters are in the middle of the string, swap character under cursor with
+      // previous, then move the cursor to the right
+      chars.swapAt(pos - 1, pos)
+      pos += 1
+    } else {
+      // If the character is at the start of the string, swap the first two characters, then
+      // put the cursor after them
+      chars.swapAt(0, 1)
+      pos = 2
+    }
+    self.buffer = String(chars)
+    self.location = self.index(atCharacterOffset: pos)
+    return true
   }
   
   func requiresMatching() -> Bool {
